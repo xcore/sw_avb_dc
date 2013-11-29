@@ -36,8 +36,9 @@
         <version>2.2.0rc0</version>
     </dependency>
     <dependency repo = "sc_avb">
-        <githash>a50b35d9f66435bb42810ca7076b90b54cf498b2</githash>
+        <githash>f0e936e2a0dfd2c83ebd07b68b46f5627708d777</githash>
         <uri>https://github.com/xcore/sc_avb.git</uri>
+        <version>6.0.0alpha3</version>
     </dependency>
     <dependency repo = "sc_util">
         <githash>d0531d7c68ab67334582c324828e36d617baf8b3</githash>
