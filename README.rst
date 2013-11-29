@@ -1,5 +1,5 @@
-AVB Software Stack
-..................
+AVB-DC Software Stack
+.....................
 
 :Latest release: 1.0.0beta0
 :Maintainer: ajwlucas
@@ -9,23 +9,39 @@ AVB Software Stack
 Key Features
 ============
 
+* Up to 4in/4out I2S audio channels
+* Single stream support only
+* 48 kHz sample rate only
+* Support for 2 daisy-chained boards to a third Talker/Listener
 * 1722 Talker and Listener (simultaneous) support
 * 1722 MAAP support for Talkers
 * 802.1Q MRP, MMRP, MVRP, SRP protocols
 * gPTP server and protocol
-* Audio interface for I2S and TDM
 * Media clock recovery and interface to PLL clock source
-* Support for 1722.1 AVDECC: ADP, AECP (AEM) and ACMP Draft 21
+* Support for 1722.1 AVDECC: ADP, AECP (AEM) and ACMP
 
 Firmware Overview
 =================
 
-This firmware is a reference endpoint implementation of Audio Video Bridging protocols for XMOS silicon. It includes a PTP time
-server to provide a stable wallclock reference and clock recovery to synchronise listener audio to talker audio
+This firmware is a daisy-chain endpoint implementation of Audio Video Bridging protocols for XMOS XS1-L16A-128-QF124-C10 devices.
+It includes a PTP time server to provide a stable wallclock reference and clock recovery to synchronise listener audio to talker audio
 codecs. The Stream Reservation Protocol is used to reserve bandwidth through 802.1 network infrastructure.
 
 Known Issues
 ============
+
+* Building will generate invalid warning messages that can be ignored:
+    * *WARNING: Include file .build/generated/module_avb_1722_1/aem_descriptors.h missing*
+    * *audio_i2s.h:187: warning: cannot unroll loop due to unknown loop iteration count*
+* XTA will report a timing failure for route(1).
+* Apple Macs may send bad PTP Sync timestamps under load. A workaround has been implemented in AVB-DC firmware to prevent loss of audio 
+  which may may cause interoperability issues with non-compliant AVB bridges. This workaround can be disabled at the following
+  line in module_gptp/src/gptp_config.h:
+  *#define PTP_THROW_AWAY_SYNC_OUTLIERS 0*
+* OS X device aggregation occasionally zeroes incorrect streams when one device is disconnected from the aggregate of multi-output device.
+* PTP Announce messages may have an incorrect Path Trace TLV with nodes appearing twice in the trace.
+* SRP interoperability issues have been observed with Broadcom Hawkeye 53324 bridge reference designs running firmware v6.0.0.0. This
+  may result in stream reservations not succeeding. 
 
 Support
 =======
