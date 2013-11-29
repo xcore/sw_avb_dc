@@ -62,7 +62,10 @@
     <release parenthash = "a6404f41c4f847f245ca42db0f50b25291a2a0b5" version = "1.0.0beta0"></release>
     <subpartnumber>XM-004457-SM</subpartnumber>
     <vendor>XMOS</vendor>
-    <version_defines></version_defines>
+    <exclude_dir>tests</exclude_dir>
+    <version_defines>
+        <version_define type = "str" name = "AVB_1722_1_FIRMWARE_VERSION_STRING" format = "%VERSION%"></version_define>
+    </version_defines>
     <xcore_repo>git://github.com/xcore/sw_avb_dc.git</xcore_repo>
     <xpd_version>1.0</xpd_version>
 </xpd>
