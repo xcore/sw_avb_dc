@@ -38,7 +38,7 @@ Known Issues
   which may may cause interoperability issues with non-compliant AVB bridges. This workaround can be disabled at the following
   line in module_gptp/src/gptp_config.h:
   *#define PTP_THROW_AWAY_SYNC_OUTLIERS 0*
-* OS X device aggregation occasionally zeroes incorrect streams when one device is disconnected from the aggregate of multi-output device.
+* OS X device aggregation occasionally zeros incorrect streams when one device is disconnected from the aggregate of multi-output device.
 * PTP Announce messages may have an incorrect Path Trace TLV with nodes appearing twice in the trace.
 * SRP interoperability issues have been observed with Broadcom Hawkeye 53324 bridge reference designs running firmware v6.0.0.0. This
   may result in stream reservations not succeeding. 
