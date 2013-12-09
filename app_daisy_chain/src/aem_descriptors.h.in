@@ -365,7 +365,7 @@ unsigned char desc_stream_input_0[] =
   AVB_NUM_MEDIA_OUTPUTS/AVB_NUM_SINKS, // label_mbla_cnt
   0, // label_midi_cnt[0:3], label_smptecnt[4:]
   U16(132),                                   /* formats_offset */
-  U16(2),                                     /* number_of_formats */
+  U16(1),                                     /* number_of_formats */
   0, 0, 0, 0, 0, 0, 0, 0,                     /* backup_talker_guid[0] */
   U16(0),                                     /* backup_talker_unique[0] */
   0, 0, 0, 0, 0, 0, 0, 0,                     /* backup_talker_guid[1] */
@@ -402,7 +402,7 @@ unsigned char desc_stream_output_0[] =
   AVB_NUM_MEDIA_INPUTS/AVB_NUM_SOURCES, // label_mbla_cnt
   0, // label_midi_cnt[0:3], label_smptecnt[4:]
   U16(132),                                   /* formats_offset */
-  U16(2),                                     /* number_of_formats */
+  U16(1),                                     /* number_of_formats */
   0, 0, 0, 0, 0, 0, 0, 0,                     /* backup_talker_guid[0] */
   U16(0),                                     /* backup_talker_unique[0] */
   0, 0, 0, 0, 0, 0, 0, 0,                     /* backup_talker_guid[1] */
