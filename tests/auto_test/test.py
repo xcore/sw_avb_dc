@@ -101,11 +101,11 @@ def get_dual_port_nodes(nodes):
 
 def action_enumerate(params_list):
   entity_id = params_list[0]
-  
-  descriptors = entity_by_name(entity_id)["descriptors"]
+
+  descriptors = entity_by_name(entity_id)['descriptors']
   controller_expect = sequences.controller_enumerate_seq(controller_id, descriptors)
   controller_enumerate(controller_id, entity_id)
-    
+
   return master.expect(controller_expect)
 
 def action_connect(params_list):
@@ -133,7 +133,7 @@ def action_connect(params_list):
 
   if not_forward_enable:
     not_forward_enable = [NoneOf(not_forward_enable)]
-    
+
   return master.expect(AllOf(talker_expect + listener_expect + controller_expect + forward_enable + not_forward_enable))
 
 def action_disconnect(params_list):
@@ -165,10 +165,10 @@ def action_disconnect(params_list):
   return master.expect(AllOf(talker_expect + listener_expect + controller_expect + forward_disable + not_forward_disable))
 
 def action_continue(params_list):
-  ''' Do nothing 
-  '''
+  """ Do nothing
+  """
   return master.expect(None)
-  
+
 def chk(master, endpoints):
   return master.expect(Expected(controller_id, "Found %d entities" % len(endpoints), 15))
 
