@@ -11,8 +11,10 @@ from twisted.internet.defer import inlineCallbacks
 import xmos.test.process as process
 import xmos.test.master as master
 import xmos.test.base as base
+import xmos.test.xmos_logging as xmos_logging
 import xmos.test.generator as generator
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected
+from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
 import sequences
 import state
@@ -21,8 +23,8 @@ all_ep_names = set()
 endpoints = []
 controller_id = 'c1'
 
-def handle_config_error(file, user):
-  print "Device configuration is not available in '%s' file for the user '%s' " % (file, user)
+def handle_config_error(f, user):
+  log_error("Device configuration is not available in '%s' file for the user '%s' " % (f, user))
   exit(1)
 
 def find_path(graph, start, end, path=[]):
@@ -51,7 +53,7 @@ def get_path_endpoints(path):
   return nodes
 
 def print_title(title):
-    print "\n%s\n%s\n" % (title, '=' * len(title))
+    log_info("\n%s\n%s\n" % (title, '=' * len(title)))
 
 def get_parent(full_path):
   (parent, file) = os.path.split(full_path)
@@ -234,7 +236,7 @@ def startXrun(combined_args):
 
   exe_name = base.exe_name('xrun')
   xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
-  print "Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', bin]))
+  log_info("Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', bin])))
   reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', bin],
       env=os.environ, path=args.workdir)
 
@@ -243,7 +245,7 @@ def startXrunWithDelay(delay, name, adapter_id, bin, args):
   # master task is started
   ep = process.XrunProcess(name, master, verbose=True, output_file=name + '_console.log')
 
-  print "Starting %s in %.3f" % (name, delay)
+  log_info("Starting %s in %.3f" % (name, delay))
   d = defer.Deferred()
   reactor.callLater(delay, d.callback, (name, ep, adapter_id, bin, args))
   d.addCallback(startXrun)
@@ -257,6 +259,8 @@ if __name__ == "__main__":
   parser.add_argument('--workdir', dest='workdir', nargs='?', help="working directory", default='./')
   parser.add_argument('--test_file', dest='test_file', nargs='?', help="name of .json test configuration file", required=True)
   args = parser.parse_args()
+
+  xmos_logging.configure_logging(level_file='DEBUG', filename=args.logfile)
 
   with open('eth.json') as f:
     eth = json.load(f)
@@ -272,7 +276,7 @@ if __name__ == "__main__":
   # Create the master to pass to each process
   master = master.Master()
 
-  print "Running test with seed {seed}".format(seed=args.seed)
+  log_info("Running test with seed {seed}".format(seed=args.seed))
   random.seed(args.seed)
   delay = random.uniform(0, 10)
 

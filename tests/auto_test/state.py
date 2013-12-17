@@ -1,4 +1,5 @@
 import xmos.test.base as base
+from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
 ''' Track the current connections in the topology.
      - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
@@ -8,6 +9,17 @@ import xmos.test.base as base
 active_connections = {}
 active_talkers = {}
 active_listeners = {}
+
+CONNECTION_SEP = '->'
+
+def dump_state():
+  log_debug("Current state:")
+  for t,n in active_talkers.iteritems():
+    log_debug("Talker {t_id} : {n}".format(t_id=t, n=n))
+  for l,n in active_listeners.iteritems():
+    log_debug("Listeners {l_id} : {n}".format(l_id=l, n=n))
+  for c,n in active_connections.iteritems():
+    log_debug("Connection {c} : {n}".format(c=c, n=n))
 
 def get_src_key(src, src_stream):
     return src + ':' + str(src_stream)
@@ -90,12 +102,12 @@ def get_listener_state(dst, dst_stream, action):
             state = 'listener'
         else:
             state = 'redundant'
+  log_debug("get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
     else:
       testError("Unknown action '%s'" % action, True)
 
-    if base.test_config.verbose:
-        print "get_listener_state for %s %d: %s" % (dst, dst_stream, state)
-    return (state + '_' + action)
+  log_debug("get_listener_state for %s %d: %s" % (dst, dst_stream, state))
+  return (state + '_' + action)
 
 def get_controller_state(src, src_stream, dst, dst_stream, action):
     if action == 'connect':
@@ -111,7 +123,6 @@ def get_controller_state(src, src_stream, dst, dst_stream, action):
         else:
             state = 'success'
 
-    if base.test_config.verbose:
-        print "get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state)
-    return ('controller_' + state + '_' + action)
+  log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
+  return ('controller_' + state + '_' + action)
 
