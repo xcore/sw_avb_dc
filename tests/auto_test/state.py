@@ -22,106 +22,130 @@ def dump_state():
     log_debug("Connection {c} : {n}".format(c=c, n=n))
 
 def get_src_key(src, src_stream):
-    return src + ':' + str(src_stream)
+  return src + ':' + str(src_stream)
 
 def get_dst_key(dst, dst_stream):
-    return dst + ':' + str(dst_stream)
+  return dst + ':' + str(dst_stream)
 
 def get_con_key(src, src_stream, dst, dst_stream):
-    return get_src_key(src, src_stream) + get_dst_key(dst, dst_stream)
+  return get_src_key(src, src_stream) + CONNECTION_SEP + get_dst_key(dst, dst_stream)
 
 def connect(src, src_stream, dst, dst_stream):
+  """ A connection will occur if the connection doesn't already exist
+      and the listener is not in use
+  """
+  if (not connected(src, src_stream, dst, dst_stream) and
+      not listener_active_count(dst, dst_stream)):
+
     src_key = get_src_key(src, src_stream)
     dst_key = get_dst_key(dst, dst_stream)
     con_key = get_con_key(src, src_stream, dst, dst_stream)
 
     talkers = active_talkers.get(src_key, 0)
+    active_talkers[src_key] = talkers + 1
+
     connections = active_connections.get(con_key, 0)
-
-    # The talker count should only be incremented if this is a new connection
-    if not active_connections.get(con_key, 0):
-        active_talkers[src_key] = talkers + 1
-
     active_connections[con_key] = connections + 1
 
     # Listeners can only accept one connection
     active_listeners[dst_key] = 1
 
 def disconnect(src, src_stream, dst, dst_stream):
+  if connected(src, src_stream, dst, dst_stream):
     src_key = get_src_key(src, src_stream)
     dst_key = get_dst_key(dst, dst_stream)
     con_key = get_con_key(src, src_stream, dst, dst_stream)
-    if active_talkers.get(src_key, 0):
-        active_talkers[src_key] -= 1
-    if active_listeners.get(dst_key,0):
-        active_listeners[dst_key] -= 1
-    if active_connections.get(con_key,0):
-        active_connections[con_key] -= 1
 
-def connected(src, src_stream, dst, dst_stream):
+    assert active_talkers.get(src_key, 0)
+    active_talkers[src_key] -= 1
+
+    assert active_listeners.get(dst_key, 0)
+    active_listeners[dst_key] -= 1
+
+    assert active_connections.get(con_key, 0)
+    active_connections[con_key] -= 1
+
+def connected(src, src_stream, dst, dst_stream=None):
+  """ Check whether a src stream is connected to a dest node. Can specify the
+      dest stream if desired.
+  """
+  connected = False
+  if dst_stream:
     con_key = get_con_key(src, src_stream, dst, dst_stream)
     if active_connections.get(con_key, 0):
-        return True
-    return False
+        connected = True
+  else:
+    for connection in active_connections.keys():
+      if (connection.startswith(get_src_key(src, src_stream) + CONNECTION_SEP + dst) and
+          active_connections[connection]):
+        connected = True
+
+  log_debug("connected {src} {src_stream} {dst} {dst_stream} ? {answer}".format(
+        src=src, src_stream=src_stream, dst=dst, dst_stream=dst_stream,
+        answer=connected))
+  return connected
 
 def talker_active_count(src, src_stream):
-    src_key = get_src_key(src, src_stream)
-    return active_talkers.get(src_key, 0)
+  src_key = get_src_key(src, src_stream)
+  return active_talkers.get(src_key, 0)
 
 def listener_active_count(dst, dst_stream):
-    dst_key = get_src_key(dst, dst_stream)
-    return active_listeners.get(dst_key, 0)
+  dst_key = get_src_key(dst, dst_stream)
+  return active_listeners.get(dst_key, 0)
 
 def get_talker_state(src, src_stream, dst, dst_stream, action):
-    if action == 'connect':
-        if connected(src, src_stream, dst, dst_stream):
-            state = 'redundant'
-        else:
-            if talker_active_count(src, src_stream):
-                state = 'talker_existing'
-            else:
-                state = 'talker_new'
-    elif action == 'disconnect':
-        if not connected(src, src_stream, dst, dst_stream):
-            state = 'redundant'
-        else:
-            if talker_active_count(src, src_stream) == 1:
-                state = 'talker_all'
-            else:
-                state = 'talker_existing'
-
-    if base.test_config.verbose:
-        print "get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state)
-    return (state + '_' + action)
-
-def get_listener_state(dst, dst_stream, action):
-    if action == 'connect':
-        state = 'listener'
-    elif action == 'disconnect':
-        if listener_active_count(dst, dst_stream):
-            state = 'listener'
-        else:
-            state = 'redundant'
-  log_debug("get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
+  if action == 'connect':
+    if connected(src, src_stream, dst, dst_stream):
+      state = 'redundant'
     else:
-      testError("Unknown action '%s'" % action, True)
+      if listener_active_count(dst, dst_stream):
+        state = 'redundant'
+      elif talker_active_count(src, src_stream):
+        state = 'talker_existing'
+      else:
+        state = 'talker_new'
+  elif action == 'disconnect':
+    if not connected(src, src_stream, dst, dst_stream):
+      state = 'redundant'
+    else:
+      if talker_active_count(src, src_stream) == 1:
+        state = 'talker_all'
+      else:
+        state = 'talker_existing'
+
+  log_debug("get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
+  return (state + '_' + action)
+
+def get_listener_state(src, src_stream, dst, dst_stream, action):
+  if action == 'connect':
+    if listener_active_count(dst, dst_stream):
+      state = 'redundant'
+    else:
+      state = 'listener'
+  elif action == 'disconnect':
+    if connected(src, src_stream, dst, dst_stream):
+      state = 'listener'
+    else:
+      state = 'redundant'
+  else:
+    testError("Unknown action '%s'" % action, True)
 
   log_debug("get_listener_state for %s %d: %s" % (dst, dst_stream, state))
   return (state + '_' + action)
 
 def get_controller_state(src, src_stream, dst, dst_stream, action):
-    if action == 'connect':
-        if connected(src, src_stream, dst, dst_stream):
-            state = 'success'
-        elif listener_active_count(dst, dst_stream):
-            state = 'listener_exclusive'
-        else:
-            state = 'success'
-    elif action == 'disconnect':
-        if not connected(src, src_stream, dst, dst_stream):
-            state = 'redundant'
-        else:
-            state = 'success'
+  if action == 'connect':
+    if connected(src, src_stream, dst, dst_stream):
+      state = 'success'
+    elif listener_active_count(dst, dst_stream):
+      state = 'listener_exclusive'
+    else:
+      state = 'success'
+  elif action == 'disconnect':
+    if not connected(src, src_stream, dst, dst_stream):
+      state = 'redundant'
+    else:
+      state = 'success'
 
   log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
   return ('controller_' + state + '_' + action)
