@@ -26,28 +26,35 @@
             "listener_streams": 1,
             "descriptors" : {
                 "1_CONFIGURATION" : {
-                    "Configuration 0": {
-                        "descriptor_counts_count":9
-                    }
+                    "Configuration 0": [
+                        { "item" : "descriptor_counts_count", "value" : 9}
+                    ]
                 },
                 "2_AUDIO_UNIT": {
-                    "Audio Unit 0" : {
-                        "number_of_stream_output_ports": 1,
-                        "current_sampling_rate": "0xbb80"
-                    }
+                    "Audio Unit 0" : [
+                        { "item" : "number_of_stream_output_ports", "value" : 1},
+                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                    ]
                 },
                 "3_CLOCK_DOMAIN": {
-                    "Clock Domain": {
-                        "clock_source_index": 0,
-                        "clock_sources_count": 2
-                    }
+                    "Clock Domain": [
+                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_sources_count", "value" : 2}
+                    ]
                 },
                 "4_STREAM_INPUT": {
-                    "Input Stream 0": {
-                        "clock_domain_index": "0x0",
-                        "stream_flags": "CLASS_A",
-                        "avb_interface_index": 0
-                    }
+                    "Input 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
+                },
+                "5_STREAM_INPUT": {
+                    "Output 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
                 }
             }
         },
@@ -77,28 +84,35 @@
             "listener_streams": 1,
             "descriptors" : {
                 "1_CONFIGURATION" : {
-                    "Configuration 0": {
-                        "descriptor_counts_count":9
-                    }
+                    "Configuration 0": [
+                        { "item" : "descriptor_counts_count", "value" : 9}
+                    ]
                 },
                 "2_AUDIO_UNIT": {
-                    "Audio Unit 0" : {
-                        "number_of_stream_output_ports": 1,
-                        "current_sampling_rate": "0xbb80"
-                    }
+                    "Audio Unit 0" : [
+                        { "item" : "number_of_stream_output_ports", "value" : 1},
+                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                    ]
                 },
                 "3_CLOCK_DOMAIN": {
-                    "Clock Domain": {
-                        "clock_source_index": 0,
-                        "clock_sources_count": 2
-                    }
+                    "Clock Domain": [
+                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_sources_count", "value" : 2}
+                    ]
                 },
                 "4_STREAM_INPUT": {
-                    "Input Stream 0": {
-                        "clock_domain_index": "0x0",
-                        "stream_flags": "CLASS_A",
-                        "avb_interface_index": 0
-                    }
+                    "Input 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
+                },
+                "5_STREAM_INPUT": {
+                    "Output 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
                 }
             }
         },
@@ -128,28 +142,35 @@
             "listener_streams": 1,
             "descriptors" : {
                 "1_CONFIGURATION" : {
-                    "Configuration 0": {
-                        "descriptor_counts_count":9
-                    }
+                    "Configuration 0": [
+                        { "item" : "descriptor_counts_count", "value" : 9}
+                    ]
                 },
                 "2_AUDIO_UNIT": {
-                    "Audio Unit 0" : {
-                        "number_of_stream_output_ports": 1,
-                        "current_sampling_rate": "0xbb80"
-                    }
+                    "Audio Unit 0" : [
+                        { "item" : "number_of_stream_output_ports", "value" : 1},
+                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
+                    ]
                 },
                 "3_CLOCK_DOMAIN": {
-                    "Clock Domain": {
-                        "clock_source_index": 0,
-                        "clock_sources_count": 2
-                    }
+                    "Clock Domain": [
+                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_sources_count", "value" : 2}
+                    ]
                 },
                 "4_STREAM_INPUT": {
-                    "Stream Input 0": {
-                        "clock_domain_index": "0x0",
-                        "stream_flags": "CLASS_A",
-                        "avb_interface_index": 0
-                    }
+                    "Stream Input 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
+                },
+                "5_STREAM_INPUT": {
+                    "Stream Output 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
                 }
             }
         }

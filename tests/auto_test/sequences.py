@@ -29,8 +29,8 @@ def controller_enumerate_seq(controller_id, descriptors):
         for dtor_name in descriptors[str(dtor)].keys():
             temp_string = "object_name\s*=\s*\'{0}\'".format(dtor_name)
             expected_seq.append(Expected(controller_id, temp_string, time_out))
-            for dtor_elements, value in descriptors[str(dtor)][dtor_name].iteritems():
-                temp_string = "{0}\s*=\s*{1}".format(dtor_elements, value)
+            for element in descriptors[str(dtor)][dtor_name]:
+                temp_string = "{0}\s*=\s*{1}".format(element['item'], element['value'])
                 expected_seq.append(Expected(controller_id, temp_string, time_out))
         
     return (Sequence(expected_seq))
