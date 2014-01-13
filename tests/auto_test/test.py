@@ -158,7 +158,7 @@ def action_connect(params_list):
   forward_enable = []
   nodes = get_path_endpoints(find_path(connections, src, dst))
   for node in get_dual_port_nodes(nodes):
-    if not node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, nodes):
+    if node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, nodes):
       forward_enable += sequences.expected_seq('stream_forward_enable')(args.user,
         entity_by_name(node), entity_by_name(src))
 
@@ -352,7 +352,7 @@ if __name__ == "__main__":
 
   log_info("Running test with seed {seed}".format(seed=args.seed))
   random.seed(args.seed)
-#  delay = random.uniform(0, 10)
+  # delay = random.uniform(0, 2)
   delay = 0
 
   for ep in endpoints:
@@ -363,7 +363,7 @@ if __name__ == "__main__":
 
     user_config = ep['users'][args.user]
     startXrunWithDelay(delay, ep['name'], user_config['xrun_adapter_id'], user_config['binary'], args)
-#    delay += random.uniform(0, 10)
+    delay += random.uniform(0, 5)
 
   # Create a controller process to send AVB commands to
   controller = process.ControllerProcess('c1', master, output_file="cl.log")
