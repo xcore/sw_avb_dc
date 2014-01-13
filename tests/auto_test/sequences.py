@@ -1,7 +1,8 @@
 import re
 
 import xmos.test.base as base
-from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected
+from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
+from analyzers import siggen_frequency
 
 def get_avb_id(user, ep):
     user_config = ep['users'][user]
@@ -123,3 +124,50 @@ def stream_forward_disable_seq(user, forward_ep, talker_ep):
         ]
     return forward_stream
 
+def hook_register_error(args):
+  (ep, pattern) = args
+  process = getActiveProcesses()[ep['name']]
+  process.registerErrorPattern(pattern)
+
+def hook_unregister_error(args):
+  (ep, pattern) = args
+  process = getActiveProcesses()[ep['name']]
+  process.unregisterErrorPattern(pattern)
+
+def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  analyzer = listener_ep['analyzer']
+  analyzer_name = analyzer['name']
+  analyzer_offset = listener_ep['analyzer_offset'] + analyzer['base']
+
+  # Expect both of the stereo channels to lose signal
+  signal_detect = [
+    Sequence([Expected(analyzer_name, "Channel %d: Signal detected" % (i + analyzer_offset), 10),
+              Expected(analyzer_name, "Channel %d: Frequency %d" % (i + analyzer_offset,
+                  siggen_frequency(talker_ep, i)),
+                timeout_time=5,
+                completionFn=hook_register_error,
+                completionArgs=(listener_ep, "glitch detected"))])
+      for i in range(0, 2)
+  ]
+  return signal_detect
+
+def analyzer_redundant_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  return []
+
+def analyzer_listener_disconnect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  analyzer = listener_ep['analyzer']
+  analyzer_name = analyzer['name']
+  analyzer_offset = listener_ep['analyzer_offset'] + analyzer['base']
+
+  # Expect both of the stereo channels to lose signal
+  signal_lost = [
+    Expected(analyzer_name, "Channel %d: Lost signal" % (i + analyzer_offset),
+        timeout_time=5,
+        completionFn=hook_unregister_error,
+        completionArgs=(listener_ep, "glitch detected"))
+      for i in range(0, 2)
+  ]
+  return signal_lost
+
+def analyzer_redundant_disconnect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  return []
