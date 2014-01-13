@@ -459,7 +459,9 @@ unsigned char desc_avb_interface_0[] =
   "en0",                                      /* object_name */
   U16(AEM_NO_STRING),                         /* localized_description */
   0, 0, 0, 0, 0, 0,                           /* mac_address */
-  U16(AEM_INTERFACE_FLAGS_AS_GM_SUPPORTED),   /* interface_flags */
+  U16(AEM_INTERFACE_FLAGS_GPTP_GRANDMASTER_SUPPORTED |
+      AEM_INTERFACE_FLAGS_GPTP_SUPPORTED |
+      AEM_INTERFACE_FLAGS_SRP_SUPPORTED),     /* interface_flags */
   0, 0, 0, 0, 0, 0, 0, 0,                     /* clock_identity */
   PTP_DEFAULT_GM_CAPABLE_PRIORITY1,           /* priority1 */
   PTP_CLOCK_CLASS,                            /* clock_class */
