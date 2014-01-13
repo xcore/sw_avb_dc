@@ -19,20 +19,20 @@ def expected_seq(name):
 def controller_enumerate_seq(controller_id, descriptors):
     ''' Build an enumerated sequence for an entity by reading from a topology file
     '''
-    
+
     time_out = 10
     expected_seq = []
-    
+
     for dtor in sorted(descriptors.keys()):
         temp_string = "AVB 1722.1 {0} ".format(re.sub('\d*_', '', dtor, 1))
         expected_seq.append(Expected(controller_id, temp_string, time_out))
         for dtor_name in descriptors[str(dtor)].keys():
             temp_string = "object_name\s*=\s*\'{0}\'".format(dtor_name)
             expected_seq.append(Expected(controller_id, temp_string, time_out))
-            for dtor_elements, value in descriptors[str(dtor)][dtor_name].iteritems():
-                temp_string = "{0}\s*=\s*{1}".format(dtor_elements, value)
+            for element in descriptors[str(dtor)][dtor_name]:
+                temp_string = "{0}\s*=\s*{1}".format(element['item'], element['value'])
                 expected_seq.append(Expected(controller_id, temp_string, time_out))
-        
+
     return (Sequence(expected_seq))
 
 def controller_success_connect_seq(controller_id):
