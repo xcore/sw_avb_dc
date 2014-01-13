@@ -467,7 +467,10 @@ unsigned char desc_avb_interface_0[] =
   PTP_CLOCK_ACCURACY,                         /* clock_accuracy */
   PTP_DEFAULT_PRIORITY2,                      /* priority2 */
   0,                                          /* domain_number */
-  PTP_LOG_SYNC_INTERVAL                       /* log_sync_interval */
+  PTP_LOG_SYNC_INTERVAL,                      /* log_sync_interval */
+  PTP_LOG_ANNOUNCE_INTERVAL,                  /* log_announce_interval */
+  PTP_LOG_MIN_PDELAY_REQ_INTERVAL,            /* log_pdelay_interval */
+  U16(1)                                      /* port_number */
 };
 
 /* Clock Source Descriptors */
