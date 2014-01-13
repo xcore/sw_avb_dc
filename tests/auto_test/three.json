@@ -4,9 +4,9 @@
             "name": "dc0",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "TBD",
-                    "binary": "/Users/andy/github/sw_avb/app_daisy_chain/bin/app_daisy_chain.xe",
-                    "avb_id": "2297fffe0042a6"
+                    "xrun_adapter_id": "e9LI-65n",
+                    "binary": "/Users/andy/github/dc/sw_avb_dc/app_daisy_chain/bin/app_daisy_chain.xe",
+                    "avb_id": "2297fffe005279"
                 },
                 "peter" : {
                     "xrun_adapter_id": "J1YyWGk6",
@@ -62,9 +62,9 @@
             "name": "dc1",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "TBD",
-                    "binary": "/Users/andy/github/sw_avb/app_daisy_chain/bin/app_daisy_chain.xe",
-                    "avb_id": "2297fffe0042a5"
+                    "xrun_adapter_id": "KzYhXhry",
+                    "binary": "/Users/andy/github/dc/sw_avb_dc/app_daisy_chain/bin/app_daisy_chain.xe",
+                    "avb_id": "2297fffe0052b1"
                 },
                 "peter" : {
                     "xrun_adapter_id": "UPgXQ3YI",
@@ -120,9 +120,9 @@
             "name": "sp0",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "TBD",
-                    "binary": "/Users/andy/scratch/avb_srp_issue/sw_avb/app_simple_avb_demo/bin/app_simple_avb_demo.xe",
-                    "avb_id": "2297fffe0040c3"
+                    "xrun_adapter_id": "bPLRW2ov",
+                    "binary": "/Users/andy/github/sw_avb/app_simple_avb_demo/bin/app_simple_avb_demo.xe",
+                    "avb_id": "2297fffe00401a"
                 },
                 "peter" : {
                     "xrun_adapter_id": "z8Ncdnfg",
