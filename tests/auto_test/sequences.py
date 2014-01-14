@@ -3,6 +3,7 @@ import re
 import xmos.test.base as base
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
 from analyzers import siggen_frequency
+import state
 
 def get_avb_id(user, ep):
     user_config = ep['users'][user]
@@ -49,12 +50,15 @@ def controller_redundant_disconnect_seq(controller_id):
     return []
 
 def talker_new_connect_seq(ep, stream_num):
-    talker_connection = [
-            Sequence([Expected(ep['name'], "CONNECTING Talker stream #%d" % stream_num, 10),
-                      Expected(ep['name'], "Talker stream #%d ready" % stream_num, 10),
-                      Expected(ep['name'], "Talker stream #%d on" % stream_num, 10)])
-        ]
-    return talker_connection
+  """ Only on the first time the talker is turned on must the 'ready' be seen.
+  """
+  seq = [Expected(ep['name'], "CONNECTING Talker stream #%d" % stream_num, 10)]
+  if not state.get_talker_on_count(ep['name']):
+    seq += [Expected(ep['name'], "Talker stream #%d ready" % stream_num, 10)]
+  seq += [Expected(ep['name'], "Talker stream #%d on" % stream_num, 10)]
+
+  talker_connection = [Sequence(seq)]
+  return talker_connection
 
 def talker_existing_connect_seq(ep, stream_num):
     talker_connection = [
