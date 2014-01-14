@@ -273,8 +273,8 @@ def runTest(args):
     yield master.expect(Expected(name, "Channel 0: disabled", 15))
 
     # Set the base channel index
-    base = analyzer['base']
-    master.sendLine(name, "b %d" % base)
+    analyzer_base = analyzer['base']
+    master.sendLine(name, "b %d" % analyzer_base)
 
     # Configure all channels
     for (chan_id, freq) in analyzer['frequencies'].iteritems():
@@ -284,10 +284,10 @@ def runTest(args):
 
       # The channel ID is offset from the base in the generating message
       yield master.expect(
-          Expected(name, "Generating sine table for chan %d" % (chan - base), 15))
+          Expected(name, "Generating sine table for chan %d" % (chan - analyzer_base), 15))
 
     master.sendLine(name, "e a")
-    channel_enables = [Expected(name, "Channel %d: enabled" % (int(c) - base), 15)
+    channel_enables = [Expected(name, "Channel %d: enabled" % (int(c) - analyzer_base), 15)
                         for c in analyzer['frequencies'].keys()]
     yield master.expect(AllOf(channel_enables))
 
@@ -330,6 +330,8 @@ def runTest(args):
     action_function = eval('action_%s' % action[0])
     yield action_function(action[1:])
 
+  # Allow everything time to settle (in case an error is being generated)
+  yield base.sleep(5)
   base.testComplete(reactor)
 
 

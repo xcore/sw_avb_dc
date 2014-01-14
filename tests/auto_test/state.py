@@ -9,6 +9,7 @@ from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 active_connections = {}
 active_talkers = {}
 active_listeners = {}
+talker_on_count = {}
 
 CONNECTION_SEP = '->'
 
@@ -32,23 +33,26 @@ def get_con_key(src, src_stream, dst, dst_stream):
 
 def connect(src, src_stream, dst, dst_stream):
   """ A connection will occur if the connection doesn't already exist
-      and the listener is not in use
+      and the listener is not in use.
   """
-  if (not connected(src, src_stream, dst, dst_stream) and
-      not listener_active_count(dst, dst_stream)):
+  if (connected(src, src_stream, dst, dst_stream) or
+      listener_active_count(dst, dst_stream)):
+    return
 
-    src_key = get_src_key(src, src_stream)
-    dst_key = get_dst_key(dst, dst_stream)
-    con_key = get_con_key(src, src_stream, dst, dst_stream)
+  src_key = get_src_key(src, src_stream)
+  dst_key = get_dst_key(dst, dst_stream)
+  con_key = get_con_key(src, src_stream, dst, dst_stream)
 
-    talkers = active_talkers.get(src_key, 0)
-    active_talkers[src_key] = talkers + 1
+  talkers = active_talkers.get(src_key, 0)
+  active_talkers[src_key] = talkers + 1
 
-    connections = active_connections.get(con_key, 0)
-    active_connections[con_key] = connections + 1
+  talker_on_count[src] = talker_on_count.get(src, 0) + 1
 
-    # Listeners can only accept one connection
-    active_listeners[dst_key] = 1
+  connections = active_connections.get(con_key, 0)
+  active_connections[con_key] = connections + 1
+
+  # Listeners can only accept one connection
+  active_listeners[dst_key] = 1
 
 def disconnect(src, src_stream, dst, dst_stream):
   if connected(src, src_stream, dst, dst_stream):
@@ -88,6 +92,9 @@ def connected(src, src_stream, dst, dst_stream=None):
 def talker_active_count(src, src_stream):
   src_key = get_src_key(src, src_stream)
   return active_talkers.get(src_key, 0)
+
+def get_talker_on_count(src):
+  return talker_on_count.get(src, 0)
 
 def listener_active_count(dst, dst_stream):
   dst_key = get_src_key(dst, dst_stream)
