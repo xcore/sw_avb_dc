@@ -53,7 +53,8 @@ def find_path(graph, start, end, path=[]):
   return None
 
 def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, nodes):
-  if state.connected(src, src_stream, dst, dst_stream):
+  if (state.connected(src, src_stream, dst, dst_stream) or
+      state.listener_active_count(dst, dst_stream)):
     # Connection will have no effect
     return False
 
