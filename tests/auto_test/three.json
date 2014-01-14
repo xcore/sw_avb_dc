@@ -24,6 +24,8 @@
             "talker_streams": 1,
             "in_channels": 4,
             "listener_streams": 1,
+            "analyzer" : "analyzer0",
+            "analyzer_offset" : 0,
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
@@ -82,6 +84,8 @@
             "talker_streams": 1,
             "in_channels": 4,
             "listener_streams": 1,
+            "analyzer" : "analyzer0",
+            "analyzer_offset" : 2,
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
@@ -140,6 +144,8 @@
             "talker_streams": 1,
             "in_channels": 4,
             "listener_streams": 1,
+            "analyzer" : "analyzer1",
+            "analyzer_offset" : 0,
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
@@ -175,7 +181,53 @@
             }
         }
     ],
-    "connections" : {
+    "analyzers" : [
+        {
+            "name" : "analyzer0",
+            "port" : 12348,
+            "base" : 0,
+            "frequencies" : {
+              "0" : 1000,
+              "1" : 2000,
+              "2" : 3000,
+              "3" : 4000
+            },
+            "users" : {
+                "andy" : {
+                    "xrun_adapter_id": "TBD"
+                },
+                "peter" : {
+                    "xrun_adapter_id": "N3xREyZ2"
+                },
+                "srini" : {
+                    "xrun_adapter_id": "TBD"
+                }
+            }
+        },
+        {
+            "name" : "analyzer1",
+            "port" : 12349,
+            "base" : 4,
+            "frequencies" : {
+              "4" : 5000,
+              "5" : 6000,
+              "6" : 7000,
+              "7" : 8000
+            },
+            "users" : {
+                "andy" : {
+                    "xrun_adapter_id": "TBD"
+                },
+                "peter" : {
+                    "xrun_adapter_id": "kHODr4xB"
+                },
+                "srini" : {
+                    "xrun_adapter_id": "TBD"
+                }
+            }
+        }
+    ],
+    "port_connections" : {
         "dc0" : [ "dc0_0", "dc0_1" ],
         "dc1" : [ "dc1_0", "dc1_1" ],
         "sp0" : [ "sp0_0" ],

@@ -1,7 +1,8 @@
 import re
 
 import xmos.test.base as base
-from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected
+from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
+from analyzers import siggen_frequency
 
 def get_avb_id(user, ep):
     user_config = ep['users'][user]
@@ -49,50 +50,47 @@ def controller_redundant_disconnect_seq(controller_id):
 
 def talker_new_connect_seq(ep, stream_num):
     talker_connection = [
-            Sequence([Expected(ep["name"], "CONNECTING Talker stream #%d" % stream_num, 10),
-                      Expected(ep["name"], "Talker stream #%d ready" % stream_num, 10),
-                      Expected(ep["name"], "Talker stream #%d on" % stream_num, 10)])
+            Sequence([Expected(ep['name'], "CONNECTING Talker stream #%d" % stream_num, 10),
+                      Expected(ep['name'], "Talker stream #%d ready" % stream_num, 10),
+                      Expected(ep['name'], "Talker stream #%d on" % stream_num, 10)])
         ]
     return talker_connection
 
 def talker_existing_connect_seq(ep, stream_num):
     talker_connection = [
-            Sequence([Expected(ep["name"], "CONNECTING Talker stream #%d" % stream_num, 10)])
+            Sequence([Expected(ep['name'], "CONNECTING Talker stream #%d" % stream_num, 10)])
         ]
     return talker_connection
 
 def talker_all_disconnect_seq(ep, stream_num):
     talker_disconnection = [
-            Sequence([Expected(ep["name"], "DISCONNECTING Talker stream #%d" % stream_num, 10),
-                      Expected(ep["name"], "Talker stream #%d off" % stream_num, 10)])
+            Sequence([Expected(ep['name'], "DISCONNECTING Talker stream #%d" % stream_num, 10),
+                      Expected(ep['name'], "Talker stream #%d off" % stream_num, 10)])
         ]
     return talker_disconnection
 
 def talker_existing_disconnect_seq(ep, stream_num):
     talker_disconnection = [
-            Sequence([Expected(ep["name"], "DISCONNECTING Talker stream #%d" % stream_num, 10),
+            Sequence([Expected(ep['name'], "DISCONNECTING Talker stream #%d" % stream_num, 10),
                     # Ensure that we don't accidentally trigger the Talker to turn off the stream:
-                      NoneOf([Expected(ep["name"], "Talker stream #%d ready" % stream_num, 10),
-                      #OneOf([Expected(ep["name"], "Talker stream #%d ready" % stream_num, 10),
-                              Expected(ep["name"], "Talker stream #%d off" % stream_num, 10)])
+                      NoneOf([Expected(ep['name'], "Talker stream #%d ready" % stream_num, 10),
+                              Expected(ep['name'], "Talker stream #%d off" % stream_num, 10)])
                     ])
         ]
     return talker_disconnection
 
 def listener_connect_seq(ep, stream_num):
     listener_connection = [
-            Sequence([Expected(ep["name"], "CONNECTING Listener sink #%d" % stream_num, 30),
-                      AllOf([Expected(ep["name"], "%d -> %d" % (n, n), 10) for n in range(ep["in_channels"])]),
-                      AllOf([Expected(ep["name"], "Media output %d locked" % n, 10) for n in range(ep["in_channels"])]),
-                      #AllOf([Expected(ep["name"], "%d -> %d" % (n, n), 10) for n in range(ep["channels"])]),
-                      #AllOf([Expected(ep["name"], "Media output %d locked" % n, 10) for n in range(ep["channels"])]),
-                      NoneOf([Expected(ep["name"], "Media output \d+ lost lock", 10)])])
+            Sequence([Expected(ep['name'], "CONNECTING Listener sink #%d" % stream_num, 30),
+                      AllOf([Expected(ep['name'], "%d -> %d" % (n, n), 10) for n in range(ep['in_channels'])]),
+                      AllOf([Expected(ep['name'], "Media output %d locked" % n, 10) for n in range(ep['in_channels'])]),
+                      NoneOf([Expected(ep['name'], "Media output \d+ lost lock", 10)])])
         ]
     return listener_connection
 
 def listener_disconnect_seq(ep, stream_num):
     listener_disconnection = [
-            Expected(ep["name"], "DISCONNECTING Listener sink #%d" % stream_num, 10)
+            Expected(ep['name'], "DISCONNECTING Listener sink #%d" % stream_num, 10)
         ]
     return listener_disconnection
 
@@ -101,7 +99,7 @@ def redundant_connect_seq(ep, stream_num):
         Just ensuring that lock is not lost.
     '''
     empty_seq = [
-            NoneOf([Expected(ep["name"], "Media output \d+ lost lock", 2)])
+            NoneOf([Expected(ep['name'], "Media output \d+ lost lock", 2)])
         ]
     return empty_seq
 
@@ -113,13 +111,60 @@ def redundant_disconnect_seq(ep, stream_num):
 
 def stream_forward_enable_seq(user, forward_ep, talker_ep):
     forward_stream = [
-            Expected(forward_ep["name"], "1722 router: Enabled forwarding for stream %s" % stream_id_from_guid(user, talker_ep, 0), 10)
+            Expected(forward_ep['name'], "1722 router: Enabled forwarding for stream %s" % stream_id_from_guid(user, talker_ep, 0), 10)
         ]
     return forward_stream
 
 def stream_forward_disable_seq(user, forward_ep, talker_ep):
     forward_stream = [
-            Expected(forward_ep["name"], "1722 router: Disabled forwarding for stream %s" % stream_id_from_guid(user, talker_ep, 0), 10)
+            Expected(forward_ep['name'], "1722 router: Disabled forwarding for stream %s" % stream_id_from_guid(user, talker_ep, 0), 10)
         ]
     return forward_stream
 
+def hook_register_error(args):
+  (ep, pattern) = args
+  process = getActiveProcesses()[ep['name']]
+  process.registerErrorPattern(pattern)
+
+def hook_unregister_error(args):
+  (ep, pattern) = args
+  process = getActiveProcesses()[ep['name']]
+  process.unregisterErrorPattern(pattern)
+
+def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  analyzer = listener_ep['analyzer']
+  analyzer_name = analyzer['name']
+  analyzer_offset = listener_ep['analyzer_offset'] + analyzer['base']
+
+  # Expect both of the stereo channels to lose signal
+  signal_detect = [
+    Sequence([Expected(analyzer_name, "Channel %d: Signal detected" % (i + analyzer_offset), 10),
+              Expected(analyzer_name, "Channel %d: Frequency %d" % (i + analyzer_offset,
+                  siggen_frequency(talker_ep, i)),
+                timeout_time=5,
+                completionFn=hook_register_error,
+                completionArgs=(listener_ep, "glitch detected"))])
+      for i in range(0, 2)
+  ]
+  return signal_detect
+
+def analyzer_redundant_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  return []
+
+def analyzer_listener_disconnect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  analyzer = listener_ep['analyzer']
+  analyzer_name = analyzer['name']
+  analyzer_offset = listener_ep['analyzer_offset'] + analyzer['base']
+
+  # Expect both of the stereo channels to lose signal
+  signal_lost = [
+    Expected(analyzer_name, "Channel %d: Lost signal" % (i + analyzer_offset),
+        timeout_time=5,
+        completionFn=hook_unregister_error,
+        completionArgs=(listener_ep, "glitch detected"))
+      for i in range(0, 2)
+  ]
+  return signal_lost
+
+def analyzer_redundant_disconnect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
+  return []
