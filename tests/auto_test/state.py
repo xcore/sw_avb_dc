@@ -10,26 +10,84 @@ active_connections = {}
 active_talkers = {}
 active_listeners = {}
 talker_on_count = {}
+clock_source_master = {}
 
-CONNECTION_SEP = '->'
+class Connection(object):
+  def __init__(self, talker, listener):
+    self.talker = talker
+    self.listener = listener
+
+  def __eq__(self, another):
+    return (hasattr(another, 'talker') and
+            hasattr(another, 'listener') and
+            self.talker == another.talker and
+            self.listener == another.listener)
+
+  def __hash__(self):
+    return hash(self.__str__())
+
+  def __repr__(self):
+    return "Connection(%r, %r)" % (self.talker, self.listener)
+
+  def __str__(self):
+    return str(self.talker) + "->" + str(self.listener)
+
+
+class Talker(object):
+  def __init__(self, src, src_stream):
+    self.src = src
+    self.src_stream = src_stream
+
+  def __eq__(self, another):
+    return (hasattr(another, 'src') and
+            hasattr(another, 'src_stream') and
+            self.src == another.src and
+            self.src_stream == another.src_stream)
+
+  def __hash__(self):
+    return hash(self.__str__())
+
+  def __repr__(self):
+    return "Talker(%r, %r)" % (self.src, self.src_stream)
+
+  def __str__(self):
+    return self.src + ":" + str(self.src_stream)
+
+
+class Listener(object):
+  def __init__(self, dst, dst_stream):
+    self.dst = dst
+    self.dst_stream = dst_stream
+
+  def __eq__(self, another):
+    return (hasattr(another, 'dst') and
+            hasattr(another, 'dst_stream') and
+            self.dst == another.dst and
+            self.dst_stream == another.dst_stream)
+
+  def __hash__(self):
+    return hash(self.__str__())
+
+  def __repr__(self):
+    return "Listener(%r, %r)" % (self.dst, self.dst_stream)
+
+  def __str__(self):
+    return self.dst + ":" + str(self.dst_stream)
+
 
 def dump_state():
   log_debug("Current state:")
   for t,n in active_talkers.iteritems():
-    log_debug("Talker {t_id} : {n}".format(t_id=t, n=n))
+    log_debug("Talker %s : %d" % (t, n))
   for l,n in active_listeners.iteritems():
-    log_debug("Listeners {l_id} : {n}".format(l_id=l, n=n))
+    log_debug("Listeners %s : %d" % (l, n))
   for c,n in active_connections.iteritems():
-    log_debug("Connection {c} : {n}".format(c=c, n=n))
-
-def get_src_key(src, src_stream):
-  return src + ':' + str(src_stream)
-
-def get_dst_key(dst, dst_stream):
-  return dst + ':' + str(dst_stream)
-
-def get_con_key(src, src_stream, dst, dst_stream):
-  return get_src_key(src, src_stream) + CONNECTION_SEP + get_dst_key(dst, dst_stream)
+    log_debug("Connection %s : %d" % (c, n))
+  for c,n in talker_on_count.iteritems():
+    log_debug("Talker on count %s : %d" % (c, n))
+  for c,n in clock_source_master.iteritems():
+    if n:
+      log_debug("Clock source master %s" % c)
 
 def connect(src, src_stream, dst, dst_stream):
   """ A connection will occur if the connection doesn't already exist
@@ -39,49 +97,50 @@ def connect(src, src_stream, dst, dst_stream):
       listener_active_count(dst, dst_stream)):
     return
 
-  src_key = get_src_key(src, src_stream)
-  dst_key = get_dst_key(dst, dst_stream)
-  con_key = get_con_key(src, src_stream, dst, dst_stream)
-
-  talkers = active_talkers.get(src_key, 0)
-  active_talkers[src_key] = talkers + 1
+  talker = Talker(src, src_stream)
+  listener = Listener(dst, dst_stream)
+  connection = Connection(talker, listener)
 
   talker_on_count[src] = talker_on_count.get(src, 0) + 1
-
-  connections = active_connections.get(con_key, 0)
-  active_connections[con_key] = connections + 1
-
-  # Listeners can only accept one connection
-  active_listeners[dst_key] = 1
+  active_talkers[talker] = active_talkers.get(talker, 0) + 1
+  active_listeners[listener] = 1 # Listeners can only accept one connection
+  active_connections[connection] = active_connections.get(connection, 0) + 1
 
 def disconnect(src, src_stream, dst, dst_stream):
-  if connected(src, src_stream, dst, dst_stream):
-    src_key = get_src_key(src, src_stream)
-    dst_key = get_dst_key(dst, dst_stream)
-    con_key = get_con_key(src, src_stream, dst, dst_stream)
+  if not connected(src, src_stream, dst, dst_stream):
+    return
 
-    assert active_talkers.get(src_key, 0)
-    active_talkers[src_key] -= 1
+  talker = Talker(src, src_stream)
+  listener = Listener(dst, dst_stream)
+  connection = Connection(talker, listener)
 
-    assert active_listeners.get(dst_key, 0)
-    active_listeners[dst_key] -= 1
+  assert active_talkers.get(talker, 0)
+  active_talkers[talker] -= 1
 
-    assert active_connections.get(con_key, 0)
-    active_connections[con_key] -= 1
+  assert active_listeners.get(listener, 0)
+  active_listeners[listener] -= 1
+
+  assert active_connections.get(connection, 0)
+  active_connections[connection] -= 1
 
 def connected(src, src_stream, dst, dst_stream=None):
   """ Check whether a src stream is connected to a dest node. Can specify the
       dest stream if desired.
   """
+  talker = Talker(src, src_stream)
+  listener = Listener(dst, dst_stream)
   connected = False
   if dst_stream:
-    con_key = get_con_key(src, src_stream, dst, dst_stream)
-    if active_connections.get(con_key, 0):
+    connection = Connection(talker, listener)
+    if active_connections.get(connection, 0):
         connected = True
+
   else:
-    for connection in active_connections.keys():
-      if (connection.startswith(get_src_key(src, src_stream) + CONNECTION_SEP + dst) and
-          active_connections[connection]):
+    for c,n in active_connections.iteritems():
+      if not n:
+        continue
+
+      if c.talker == talker and c.listener.dst == dst:
         connected = True
 
   log_debug("connected {src} {src_stream} {dst} {dst_stream} ? {answer}".format(
@@ -90,15 +149,15 @@ def connected(src, src_stream, dst, dst_stream=None):
   return connected
 
 def talker_active_count(src, src_stream):
-  src_key = get_src_key(src, src_stream)
-  return active_talkers.get(src_key, 0)
+  talker = Talker(src, src_stream)
+  return active_talkers.get(talker, 0)
 
 def get_talker_on_count(src):
   return talker_on_count.get(src, 0)
 
 def listener_active_count(dst, dst_stream):
-  dst_key = get_src_key(dst, dst_stream)
-  return active_listeners.get(dst_key, 0)
+  listener = Listener(dst, dst_stream)
+  return active_listeners.get(listener, 0)
 
 def get_talker_state(src, src_stream, dst, dst_stream, action):
   if action == 'connect':
