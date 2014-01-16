@@ -61,7 +61,8 @@ def start_endpoints(args, endpoints, master, analyzers):
     all_endpoints[name] = ep
 
     if args.user not in ep['users']:
-      log_error("User '%s' not found in config file for endpoint %s" % (args.user, ep['name']))
+      log_error("User '%s' not found in config file '%s' for endpoint '%s'" %
+          (args.user, args.config, name))
       sys.exit(1)
 
     user_config = ep['users'][args.user]

@@ -36,10 +36,6 @@ controller_id = 'c1'
 exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
 
-def handle_config_error(f, user):
-  log_error("Device configuration is not available in '%s' file for the user '%s' " % (f, user))
-  exit(1)
-
 def find_path(graph, start, end, path=[]):
   path = path + [start]
   if start == end:
@@ -335,6 +331,18 @@ def runTest(args):
   base.testComplete(reactor)
 
 
+def get_eth_id(args):
+  """ Get the ethernet interface ID for the current user
+  """
+  with open('eth.json') as f:
+    eth = json.load(f)
+
+  if args.user not in eth:
+    log_debug('User %s missing from eth.json' % args.user)
+    sys.exit(1)
+
+  return eth[args.user]
+
 if __name__ == "__main__":
   parser = base.getParser()
   parser.add_argument('--config', dest='config', nargs='?', help="name of .json file", required=True)
@@ -346,11 +354,7 @@ if __name__ == "__main__":
 
   xmos_logging.configure_logging(level_file='DEBUG', filename=args.logfile)
 
-  with open('eth.json') as f:
-    eth = json.load(f)
-
-  if not os.path.exists(args.config):
-    args.config += '.json'
+  eth_id = get_eth_id(args)
 
   with open(args.config) as f:
     topology = json.load(f)
@@ -376,11 +380,6 @@ if __name__ == "__main__":
   # Create a controller process to send AVB commands to
   controller_dir = os.path.join(rootDir, 'appsval_avb', 'controller', 'avb')
   controller = ControllerProcess('c1', master, output_file="cl.log")
-
-  try:
-    eth_id = eth[args.user]
-  except:
-    handle_config_error('eth.json', args.user)
 
   # Call python with unbuffered mode to enable us to see each line as it happens
   reactor.spawnProcess(controller, sys.executable, [sys.executable, '-u', 'controller.py', '--batch', '-i', eth_id],

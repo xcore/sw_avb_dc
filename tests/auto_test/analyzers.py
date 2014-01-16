@@ -47,7 +47,9 @@ def start_analyzers(rootDir, args, master, analyzers):
     name = analyzer['name']
     all_analyzers[name] = analyzer
     if args.user not in analyzer['users']:
-      handle_config_error((args.config + '.json'), args.user)
+      log_error("User '%s' not found in config file '%s' for analyzer '%s'" %
+          (args.user, args.config, name))
+      sys.exit(1)
 
     user_config = analyzer['users'][args.user]
     start_analyzer(rootDir, master, name, user_config['xrun_adapter_id'], analyzer['port'])
