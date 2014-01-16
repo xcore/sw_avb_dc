@@ -126,14 +126,19 @@ def stream_forward_disable_seq(user, forward_ep, talker_ep):
     return forward_stream
 
 def hook_register_error(args):
-  (ep, pattern) = args
-  process = getActiveProcesses()[ep['name']]
-  process.registerErrorPattern(pattern)
+  (process_name, patterns) = args
+  process = getActiveProcesses()[process_name]
+  for pattern in patterns:
+    process.registerErrorPattern(pattern)
 
 def hook_unregister_error(args):
-  (ep, pattern) = args
-  process = getActiveProcesses()[ep['name']]
-  process.unregisterErrorPattern(pattern)
+  (process_name, patterns) = args
+  process = getActiveProcesses()[process_name]
+  for pattern in patterns:
+    process.unregisterErrorPattern(pattern)
+
+GLITCH_DETECTED_PATTERN = ": glitch detected"
+LOST_SIGNAL_PATTERN = ": Lost signal"
 
 def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
   analyzer = listener_ep['analyzer']
@@ -147,7 +152,7 @@ def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, lis
                   siggen_frequency(talker_ep, i)),
                 timeout_time=5,
                 completionFn=hook_register_error,
-                completionArgs=(listener_ep, "glitch detected"))])
+                completionArgs=(analyzer_name, [GLITCH_DETECTED_PATTERN, LOST_SIGNAL_PATTERN]))])
       for i in range(0, 2)
   ]
   return signal_detect
@@ -165,9 +170,14 @@ def analyzer_listener_disconnect_seq(talker_ep, talker_stream_num, listener_ep, 
     Expected(analyzer_name, "Channel %d: Lost signal" % (i + analyzer_offset),
         timeout_time=5,
         completionFn=hook_unregister_error,
-        completionArgs=(listener_ep, "glitch detected"))
+        completionArgs=(analyzer_name, [GLITCH_DETECTED_PATTERN]))
       for i in range(0, 2)
   ]
+
+  # Unregister the lost signal error pattern now
+  process = getActiveProcesses()[analyzer_name]
+  process.unregisterErrorPattern(LOST_SIGNAL_PATTERN)
+
   return signal_lost
 
 def analyzer_redundant_disconnect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):

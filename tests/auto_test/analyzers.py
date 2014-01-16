@@ -24,10 +24,11 @@ def siggen_frequency(talker_ep, i):
   index = "%d" % (base + i + siggen_offset)
   return siggen["frequencies"][index]
 
-def start_analyzer(rootDir, master, name, adapter_id, port):
+def start_analyzer(rootDir, master, name, adapter_id, port, args):
   log_info("Starting %s" % name)
   target_name = name + '_target'
-  target = process.XrunProcess(target_name, master, output_file=target_name + '_console.log')
+  target = process.XrunProcess(target_name, master,
+      output_file=os.path.join(args.logdir, target_name + '_console.log'))
   target_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'app_audio_analyzer_avb', 'bin', 'audio_analyzer.xe')
 
   # Windows requires the absolute path of xrun
@@ -38,7 +39,8 @@ def start_analyzer(rootDir, master, name, adapter_id, port):
       [xrun, '--adapter-id', adapter_id, '--xscope-port', 'localhost:%d' % port, target_bin],
       env=os.environ)
 
-  analyzer = process.Process(name, master, output_file=name + '_console.log')
+  analyzer = process.Process(name, master,
+      output_file=os.path.join(args.logdir, name + '_console.log'))
   analyzer_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'host_audio_analyzer', 'audio_analyzer')
   reactor.spawnProcess(analyzer, analyzer_bin, [analyzer_bin, '-p', '%d' % port], env=os.environ)
 
@@ -47,8 +49,10 @@ def start_analyzers(rootDir, args, master, analyzers):
     name = analyzer['name']
     all_analyzers[name] = analyzer
     if args.user not in analyzer['users']:
-      handle_config_error((args.config + '.json'), args.user)
+      log_error("User '%s' not found in config file '%s' for analyzer '%s'" %
+          (args.user, args.config, name))
+      sys.exit(1)
 
     user_config = analyzer['users'][args.user]
-    start_analyzer(rootDir, master, name, user_config['xrun_adapter_id'], analyzer['port'])
+    start_analyzer(rootDir, master, name, user_config['xrun_adapter_id'], analyzer['port'], args)
 

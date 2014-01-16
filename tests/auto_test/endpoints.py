@@ -44,28 +44,31 @@ def startXrun(combined_args):
   reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', bin],
       env=os.environ, path=args.workdir)
 
-def startXrunWithDelay(master, delay, name, adapter_id, bin, args):
+def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
   # Need to ensure that the endpoint and process are created and registered before the
   # master task is started
-  ep = process.XrunProcess(name, master, output_file=name + '_console.log')
+  ep = process.XrunProcess(name, master,
+      output_file=os.path.join(args.logdir, name + '_console.log'))
+  ep_bin = os.path.join(rootDir, 'sw_avb_dc', 'app_daisy_chain', 'bin', 'app_daisy_chain.xe')
 
   log_info("Starting %s in %.3f" % (name, delay))
   d = defer.Deferred()
-  reactor.callLater(delay, d.callback, (name, ep, adapter_id, bin, args))
+  reactor.callLater(delay, d.callback, (name, ep, adapter_id, ep_bin, args))
   d.addCallback(startXrun)
 
-def start_endpoints(args, endpoints, master, analyzers):
+def start_endpoints(rootDir, args, endpoints, master, analyzers):
   delay = random.uniform(0, 10)
   for ep in endpoints:
     name = ep['name']
     all_endpoints[name] = ep
 
     if args.user not in ep['users']:
-      log_error("User '%s' not found in config file for endpoint %s" % (args.user, ep['name']))
+      log_error("User '%s' not found in config file '%s' for endpoint '%s'" %
+          (args.user, args.config, name))
       sys.exit(1)
 
     user_config = ep['users'][args.user]
-    startXrunWithDelay(master, delay, ep['name'], user_config['xrun_adapter_id'], user_config['binary'], args)
+    startXrunWithDelay(rootDir, master, delay, ep['name'], user_config['xrun_adapter_id'], args)
     delay += random.uniform(0, 10)
 
   # Connect up the analyzers to then endpoints

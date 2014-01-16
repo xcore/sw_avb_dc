@@ -5,18 +5,64 @@
             "users" : {
                 "andy" : {
                     "xrun_adapter_id": "e9LI-65n",
-                    "binary": "/Users/andy/github/dc/sw_avb_dc/app_daisy_chain/bin/app_daisy_chain.xe",
                     "avb_id": "2297fffe005279"
                 },
                 "peter" : {
                     "xrun_adapter_id": "J1YyWGk6",
-                    "binary": "/Users/peter/sandboxes/avb-dc/sw_avb_dc/app_daisy_chain/bin/app_daisy_chain.xe",
                     "avb_id": "2297fffe005269"
+                }
+            },
+            "ports": 2,
+            "out_channels": 4,
+            "talker_streams": 1,
+            "in_channels": 4,
+            "listener_streams": 1,
+            "analyzer" : "analyzer1",
+            "analyzer_offset" : 0,
+            "descriptors" : {
+                "1_CONFIGURATION" : {
+                    "Configuration 0": [
+                        { "item" : "descriptor_counts_count", "value" : 9}
+                    ]
                 },
-                "srini" : {
-                    "xrun_adapter_id": "MQFZkDt_",
-                    "binary": "C:\\Srini\\MyTasks\\qa\\avb_dc\\work\\sw_avb_dc\\app_simple_avb_demo\\bin\\app_simple_avb_demo.xe",
-                    "avb_id": "2297fffe00524c"
+                "2_AUDIO_UNIT": {
+                    "Audio Unit 0" : [
+                        { "item" : "number_of_stream_output_ports", "value" : 1},
+                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                    ]
+                },
+                "3_CLOCK_DOMAIN": {
+                    "Clock Domain": [
+                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_sources_count", "value" : 2}
+                    ]
+                },
+                "4_STREAM_INPUT": {
+                    "Input 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
+                },
+                "5_STREAM_INPUT": {
+                    "Output 0": [
+                        { "item" : "clock_domain_index", "value" : "0x0"},
+                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "avb_interface_index", "value" : 0}
+                    ]
+                }
+            }
+        },
+        {
+            "name": "dc1",
+            "users" : {
+                "andy" : {
+                    "xrun_adapter_id": "KzYhXhry",
+                    "avb_id": "2297fffe0052b1"
+                },
+                "peter" : {
+                    "xrun_adapter_id": "UPgXQ3YI",
+                    "avb_id": "2297fffe005259"
                 }
             },
             "ports": 2,
@@ -61,22 +107,15 @@
             }
         },
         {
-            "name": "dc1",
+            "name": "dc2",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "KzYhXhry",
-                    "binary": "/Users/andy/github/dc/sw_avb_dc/app_daisy_chain/bin/app_daisy_chain.xe",
-                    "avb_id": "2297fffe0052b1"
+                    "xrun_adapter_id": "TBD",
+                    "avb_id": "TBD"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "UPgXQ3YI",
-                    "binary": "/Users/peter/sandboxes/avb-dc/sw_avb_dc/app_daisy_chain/bin/app_daisy_chain.xe",
-                    "avb_id": "2297fffe005259"
-                },
-                "srini" : {
-                    "xrun_adapter_id": "_3lfZChu",
-                    "binary": "C:\\Srini\\MyTasks\\qa\\avb_dc\\work\\sw_avb_dc\\app_simple_avb_demo\\bin\\app_simple_avb_demo.xe",
-                    "avb_id": "2297fffe005254"
+                    "xrun_adapter_id": "lULI7GNz",
+                    "avb_id": "2297fffe0053d8"
                 }
             },
             "ports": 2,
@@ -121,31 +160,24 @@
             }
         },
         {
-            "name": "sp0",
+            "name": "dc3",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "bPLRW2ov",
-                    "binary": "/Users/andy/github/sw_avb/app_simple_avb_demo/bin/app_simple_avb_demo.xe",
-                    "avb_id": "2297fffe00401a"
+                    "xrun_adapter_id": "TBD",
+                    "avb_id": "TBD"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "z8Ncdnfg",
-                    "binary": "/Users/peter/sandboxes/avb/sw_avb/app_simple_avb_demo/bin/app_simple_avb_demo.xe",
-                    "avb_id": "2297fffe0042a2"
-                },
-                "srini" : {
-                    "xrun_adapter_id": "LoZ-N4qe",
-                    "binary": "C:\\Srini\\MyTasks\\qa\\avb_dc\\work\\sw_avb\\app_simple_avb_demo\\bin\\app_simple_avb_demo.xe",
-                    "avb_id": "2297fffe0042a6"
+                    "xrun_adapter_id": "MD6TqJzo",
+                    "avb_id": "2297fffe0053e0"
                 }
             },
-            "ports": 1,
+            "ports": 2,
             "out_channels": 4,
             "talker_streams": 1,
             "in_channels": 4,
             "listener_streams": 1,
             "analyzer" : "analyzer1",
-            "analyzer_offset" : 0,
+            "analyzer_offset" : 2,
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
@@ -155,7 +187,7 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
+                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
@@ -165,14 +197,14 @@
                     ]
                 },
                 "4_STREAM_INPUT": {
-                    "Stream Input 0": [
+                    "Input 0": [
                         { "item" : "clock_domain_index", "value" : "0x0"},
                         { "item" : "stream_flags", "value" : "CLASS_A"},
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 },
                 "5_STREAM_INPUT": {
-                    "Stream Output 0": [
+                    "Output 0": [
                         { "item" : "clock_domain_index", "value" : "0x0"},
                         { "item" : "stream_flags", "value" : "CLASS_A"},
                         { "item" : "avb_interface_index", "value" : 0}
@@ -198,9 +230,6 @@
                 },
                 "peter" : {
                     "xrun_adapter_id": "N3xREyZ2"
-                },
-                "srini" : {
-                    "xrun_adapter_id": "TBD"
                 }
             }
         },
@@ -220,9 +249,6 @@
                 },
                 "peter" : {
                     "xrun_adapter_id": "kHODr4xB"
-                },
-                "srini" : {
-                    "xrun_adapter_id": "TBD"
                 }
             }
         }
@@ -230,11 +256,15 @@
     "port_connections" : {
         "dc0" : [ "dc0_0", "dc0_1" ],
         "dc1" : [ "dc1_0", "dc1_1" ],
-        "sp0" : [ "sp0_0" ],
+        "dc2" : [ "dc2_0", "dc2_1" ],
+        "dc3" : [ "dc3_0", "dc3_1" ],
         "dc0_0" : [ "dc0" ],
         "dc0_1" : [ "dc0", "dc1_0" ],
         "dc1_0" : [ "dc1", "dc0_1" ],
-        "dc1_1" : [ "dc1", "sp0_0" ],
-        "sp0_0" : [ "sp0", "dc1_1" ]
+        "dc1_1" : [ "dc1", "dc2_0" ],
+        "dc2_0" : [ "dc2", "dc1_1" ],
+        "dc2_1" : [ "dc2", "dc3_0" ],
+        "dc3_0" : [ "dc3", "dc2_1" ],
+        "dc3_1" : [ "dc3" ]
     }
 }
