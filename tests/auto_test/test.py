@@ -418,7 +418,6 @@ if __name__ == "__main__":
   parser.add_argument('--user', dest='user', nargs='?', help="username (selects board setup from json config file)", default=getpass.getuser())
   parser.add_argument('--seed', dest='seed', type=int, nargs='?', help="random seed", default=None)
   parser.add_argument('--test', dest='test', nargs='?', help="name of .json test configuration file", required=True)
-  parser.add_argument('--workdir', dest='workdir', nargs='?', help="working directory", default='./')
   parser.add_argument('--logdir', dest='logdir', nargs='?', help="folder to write all log files to", default="logs")
   args = parser.parse_args()
 
