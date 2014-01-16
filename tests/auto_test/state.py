@@ -2,6 +2,8 @@ import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
+from endpoints import get_all_endpoints
+
 ''' Track the current connections in the topology.
      - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
      - active_talkers     contains the active talkers (src:src_stream) and the count of how may times they are used
@@ -89,6 +91,8 @@ def dump_state():
   for c,n in clock_source_master.iteritems():
     if n:
       log_debug("Clock source master %s" % c)
+
+  draw_state()
 
 def connect(src, src_stream, dst, dst_stream):
   """ A connection will occur if the connection doesn't already exist
@@ -251,11 +255,15 @@ def get_loops():
   return loops
 
 def is_in_loop(node):
+  in_loop = False
   loops = get_loops()
   for loop in loops:
     if node in loop:
-      return True
-  return False
+      in_loop = True
+      break
+
+  log_debug("is_in_loop %s = %d" % (node, in_loop))
+  return in_loop
 
 def is_clock_source_master(node):
   return clock_source_master.get(node, 0)
@@ -266,10 +274,113 @@ def set_clock_source_master(node):
 def set_clock_source_slave(node):
   clock_source_master[node] = 0
 
+def connection_line(ep_names, ep_num, active_talkers):
+  line = ""
+  connect = "-"
+  for i,name in enumerate(ep_names):
+    if i == ep_num:
+      line += "-+"
+      connect = " "
+    elif name in active_talkers:
+      line += "%s|" % connect
+    else:
+      line += connect * 2
+  return line
+
+def non_connection_line(ep_names, active_talkers):
+  line = ""
+  for i,name in enumerate(ep_names):
+    if name in active_talkers:
+      line += " |"
+    else:
+      line += "  "
+  return line
+
+def get_listeners_for_talker(talker):
+  listeners = []
+  for c,n in active_connections.iteritems():
+    if n and c.talker.src == talker:
+      listeners += [c.listener.dst]
+  return listeners
+
+def get_talker_for_listener(listener):
+  for c,n in active_connections.iteritems():
+    if n and c.listener.dst == listener:
+      return c.talker.src
+  return None
+
+def draw_state():
+  """ Draw a graph of the connections.
+      Creates the endpoints down the left.
+      Creates connections at a depth to right which depends on the talker index.
+  """
+  ep_offset = 0
+  ep_num = 0
+  ep_names = sorted(get_all_endpoints().keys())
+  active_talkers = []
+  num_endpoints = len(ep_names)
+
+  # The endpoints are rendered over 5 lines (start, out, name, in, end)
+  # and then there is a 1-line gap between.
+  num_lines = num_endpoints * 5 + num_endpoints - 1
+  for line_num in range(0, num_lines):
+    ep_name = ep_names[ep_num]
+    line = ""
+    if ep_offset == 0 or ep_offset == 4:
+      line += " +======+ "
+      line += "  " + non_connection_line(ep_names, active_talkers)
+
+    elif ep_offset == 1:
+      line += " |      | "
+      if talker_active_count(ep_name, 0):
+        max_listener_index = 0
+        for listener in get_listeners_for_talker(ep_name):
+          listener_index = ep_names.index(listener)
+          if listener_index > max_listener_index:
+            max_listener_index = listener_index
+
+        if max_listener_index > ep_num:
+          active_talkers += [ep_name]
+        else:
+          if ep_name in active_talkers:
+            active_talkers.remove(ep_name)
+        line += "--"
+        line += connection_line(ep_names, ep_num, active_talkers)
+      else:
+        line += "  " + non_connection_line(ep_names, active_talkers)
+
+    elif ep_offset == 2:
+      line += " | %-4s | " % ep_name
+      line += "  " + non_connection_line(ep_names, active_talkers)
+
+    elif ep_offset == 3:
+      line += " |      | "
+      if listener_active_count(ep_name, 0):
+        talker = get_talker_for_listener(ep_name)
+        talker_index = ep_names.index(talker)
+        if talker_index > ep_num:
+          active_talkers += [talker]
+        else:
+          active_talkers.remove(talker)
+
+        line += "<-"
+        line += connection_line(ep_names, talker_index, active_talkers)
+      else:
+        line += "  " + non_connection_line(ep_names, active_talkers)
+
+    else:
+      line += "          "
+      line += "  " + non_connection_line(ep_names, active_talkers)
+      ep_num += 1
+      ep_offset = -1
+
+    ep_offset += 1
+    log_debug(line)
+
 
 if __name__ == "__main__":
   # A basic test for the loop detection logic
-  xmos_logging.configure_logging(level_console='INFO')
+  xmos_logging.configure_logging(level_console='INFO', level_file='DEBUG')
   print get_loops()
   connect("dc0", 0, "dc1", 0)
   print get_loops()
@@ -277,7 +388,7 @@ if __name__ == "__main__":
   print get_loops()
   disconnect("dc1", 0, "dc0", 0)
   print get_loops()
-  connect("dc1", 0, "sp0", 0)
+  connect("dc1", 0, "dc2", 0)
   print get_loops()
-  connect("sp0", 0, "dc0", 0)
+  connect("dc2", 0, "dc0", 0)
   print get_loops()
