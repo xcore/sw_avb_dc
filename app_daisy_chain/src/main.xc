@@ -10,7 +10,7 @@
 #include "audio_clock_CS2300CP.h"
 #include "audio_clock_CS2100CP.h"
 #include "audio_codec_CS4270.h"
-#include "simple_printf.h"
+#include "debug_print.h"
 #include "media_fifo.h"
 #include "ethernet_board_support.h"
 #include "simple_demo_controller.h"
