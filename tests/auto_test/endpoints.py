@@ -47,7 +47,8 @@ def startXrun(combined_args):
 def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
   # Need to ensure that the endpoint and process are created and registered before the
   # master task is started
-  ep = process.XrunProcess(name, master, output_file=name + '_console.log')
+  ep = process.XrunProcess(name, master,
+      output_file=os.path.join(args.logdir, name + '_console.log'))
   ep_bin = os.path.join(rootDir, 'sw_avb_dc', 'app_daisy_chain', 'bin', 'app_daisy_chain.xe')
 
   log_info("Starting %s in %.3f" % (name, delay))

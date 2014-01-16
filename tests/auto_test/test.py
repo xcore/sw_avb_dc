@@ -417,11 +417,16 @@ if __name__ == "__main__":
   parser.add_argument('--config', dest='config', nargs='?', help="name of .json file", required=True)
   parser.add_argument('--user', dest='user', nargs='?', help="username (selects board setup from json config file)", default=getpass.getuser())
   parser.add_argument('--seed', dest='seed', type=int, nargs='?', help="random seed", default=None)
+  parser.add_argument('--test', dest='test', nargs='?', help="name of .json test configuration file", required=True)
   parser.add_argument('--workdir', dest='workdir', nargs='?', help="working directory", default='./')
-  parser.add_argument('--test_file', dest='test_file', nargs='?', help="name of .json test configuration file", required=True)
+  parser.add_argument('--logdir', dest='logdir', nargs='?', help="folder to write all log files to", default="logs")
   args = parser.parse_args()
 
-  xmos_logging.configure_logging(level_file='DEBUG', filename=args.logfile)
+  if not os.path.exists(args.logdir):
+    os.makedirs(args.logdir)
+
+  xmos_logging.configure_logging(level_file='DEBUG',
+      filename=os.path.join(args.logdir, args.logfile))
 
   eth_id = get_eth_id(args)
 
@@ -429,11 +434,11 @@ if __name__ == "__main__":
     topology = json.load(f)
 
   # Read the test file into class structure
-  with open_json(args.test_file) as f:
+  with open_json(args.test) as f:
     test_steps = json.load(f, object_hook=generator.json_hooks)
 
   # Read the test file into a standard Python data structure
-  with open_json(args.test_file) as f:
+  with open_json(args.test) as f:
     test_config = json.load(f)
 
   set_seed(args, test_config)
