@@ -35,7 +35,7 @@
 
 
     { "command" : "enumerate dc0", "weight" : 10 },
-    { "command" : "enumerate dc1", "weight" : 10 }
+    { "command" : "enumerate dc1", "weight" : 10 },
     { "command" : "enumerate dc2", "weight" : 10 },
-    { "command" : "enumerate dc3", "weight" : 10 },
+    { "command" : "enumerate dc3", "weight" : 10 }
 ]}
