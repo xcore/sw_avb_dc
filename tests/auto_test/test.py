@@ -240,6 +240,40 @@ def action_continue(params_list):
 def chk(master, endpoints):
   return master.expect(Expected(controller_id, "Found %d entities" % len(endpoints), 15))
 
+def configure_analyzers():
+  """ Ensure the analyzers have started properly and then configure their channel
+      frequencies as specified in the test configuration file
+  """
+  analyzer_startup =  [Expected(a, "connected to .*: %d" % analyzer_port(a), 15)
+                        for a in get_all_analyzers()]
+  yield master.expect(AllOf(analyzer_startup))
+
+  for (name,analyzer) in get_all_analyzers().iteritems():
+    log_info("Configure %s" % name)
+
+    # Disable all channels
+    master.sendLine(name, "d a")
+    yield master.expect(Expected(name, "Channel 0: disabled", 15))
+
+    # Set the base channel index
+    analyzer_base = analyzer['base']
+    master.sendLine(name, "b %d" % analyzer_base)
+
+    # Configure all channels
+    for (chan_id,freq) in analyzer['frequencies'].iteritems():
+      # Need to convert unicode to string before sending as a command
+      chan = int(chan_id)
+      master.sendLine(name, "c %d %d" % (chan, freq))
+
+      # The channel ID is offset from the base in the generating message
+      yield master.expect(
+          Expected(name, "Generating sine table for chan %d" % (chan - analyzer_base), 15))
+
+    master.sendLine(name, "e a")
+    channel_enables = [Expected(name, "Channel %d: enabled" % (int(c) - analyzer_base), 15)
+                        for c in analyzer['frequencies'].keys()]
+    yield master.expect(AllOf(channel_enables))
+
 def determine_grandmaster(user):
   """ From the endpoints described determine which will be the grandmaster.
       It is the node with the lowest MAC address unless there is a switch
@@ -284,41 +318,10 @@ def ptp_startup_single_port(e, grandmaster, user):
              [Expected(e['name'], 'PTP Role: Master', 40)] +
              slave_seq)
 
-@inlineCallbacks
-def runTest(args):
-  """ The test program - needs to yield on each expect and be decorated
-    with @inlineCallbacks
+def check_endpoint_startup():
+  """ Ensure that the endpoints have started correctly. The exact sequence will depend
+      on which endpoint is the grandmaster.
   """
-  analyzer_startup =  [Expected(a, "connected to .*: %d" % analyzer_port(a), 15)
-                        for a in get_all_analyzers()]
-  yield master.expect(AllOf(analyzer_startup))
-
-  for (name,analyzer) in get_all_analyzers().iteritems():
-    log_info("Configure %s" % name)
-
-    # Disable all channels
-    master.sendLine(name, "d a")
-    yield master.expect(Expected(name, "Channel 0: disabled", 15))
-
-    # Set the base channel index
-    analyzer_base = analyzer['base']
-    master.sendLine(name, "b %d" % analyzer_base)
-
-    # Configure all channels
-    for (chan_id, freq) in analyzer['frequencies'].iteritems():
-      # Need to convert unicode to string before sending as a command
-      chan = int(chan_id)
-      master.sendLine(name, "c %d %d" % (chan, freq))
-
-      # The channel ID is offset from the base in the generating message
-      yield master.expect(
-          Expected(name, "Generating sine table for chan %d" % (chan - analyzer_base), 15))
-
-    master.sendLine(name, "e a")
-    channel_enables = [Expected(name, "Channel %d: enabled" % (int(c) - analyzer_base), 15)
-                        for c in analyzer['frequencies'].keys()]
-    yield master.expect(AllOf(channel_enables))
-
   grandmaster = determine_grandmaster(args.user)
   log_info("Using grandmaster {gm_id}".format(gm_id=get_avb_id(args.user, grandmaster)))
 
@@ -340,16 +343,27 @@ def runTest(args):
 
   yield master.expect(AllOf(ptp_startup + maap))
 
-  time.sleep(5)
+
+@inlineCallbacks
+def runTest(args):
+  """ The test program - needs to yield on each expect and be decorated
+    with @inlineCallbacks
+  """
+  for y in configure_analyzers():
+    yield y
+
+  for y in check_endpoint_startup():
+    yield y
+
   master.clearExpectHistory(controller_id)
   master.sendLine(controller_id, "discover")
   yield chk(master, get_all_endpoints().values())
 
   if not getEntities():
-    base.testError("no entities found", True)
+    base.testError("no entities found", critical=True)
 
   for (test_num, ts) in enumerate(test_steps):
-    # Ensure that the remaining output of a previous test step is flushed
+    # Ensure that any remaining output of a previous test step is flushed
     for process in getActiveProcesses():
       master.clearExpectHistory(process)
 
