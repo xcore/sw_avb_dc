@@ -361,7 +361,8 @@ def draw_state():
         if talker_index > ep_num:
           active_talkers += [talker]
         else:
-          active_talkers.remove(talker)
+          if talker in active_talkers:
+            active_talkers.remove(talker)
 
         line += "<-"
         line += connection_line(ep_names, talker_index, active_talkers)
