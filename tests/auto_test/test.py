@@ -96,7 +96,7 @@ def check_set_clock_masters():
     loop_master = loop[0]
     for ep_name in loop:
       if state.is_clock_source_master(ep_name):
-        loop_master = ep
+        loop_master = ep_name
         break
 
     if not state.is_clock_source_master(loop_master):
