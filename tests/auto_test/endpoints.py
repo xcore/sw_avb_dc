@@ -42,7 +42,7 @@ def startXrun(combined_args):
 
   log_info("Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', bin])))
   reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', bin],
-      env=os.environ, path=args.workdir)
+      env=os.environ, path=args.logdir)
 
 def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
   # Need to ensure that the endpoint and process are created and registered before the

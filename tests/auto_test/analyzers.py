@@ -37,12 +37,13 @@ def start_analyzer(rootDir, master, name, adapter_id, port, args):
 
   reactor.spawnProcess(target, xrun,
       [xrun, '--adapter-id', adapter_id, '--xscope-port', 'localhost:%d' % port, target_bin],
-      env=os.environ)
+      env=os.environ, path=args.logdir)
 
   analyzer = process.Process(name, master,
       output_file=os.path.join(args.logdir, name + '_console.log'))
   analyzer_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'host_audio_analyzer', 'audio_analyzer')
-  reactor.spawnProcess(analyzer, analyzer_bin, [analyzer_bin, '-p', '%d' % port], env=os.environ)
+  reactor.spawnProcess(analyzer, analyzer_bin, [analyzer_bin, '-p', '%d' % port],
+      env=os.environ, path=args.logdir)
 
 def start_analyzers(rootDir, args, master, analyzers):
   for analyzer in analyzers:

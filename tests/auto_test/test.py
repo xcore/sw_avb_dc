@@ -132,7 +132,11 @@ def controller_connect(controller_id, src, src_stream, dst, dst_stream):
 def controller_disconnect(controller_id, src, src_stream, dst, dst_stream):
   talker_ep = entity_by_name(src)
   listener_ep = entity_by_name(dst)
+
   state.disconnect(src, src_stream, dst, dst_stream)
+  for y in check_clear_clock_masters():
+    yield y
+
   master.sendLine(controller_id, "disconnect 0x%s %d 0x%s %d" % (
         guid_in_ascii(talker_ep), src_stream, guid_in_ascii(listener_ep), dst_stream))
 
@@ -227,7 +231,8 @@ def action_disconnect(params_list):
   if not_forward_disable:
     not_forward_disable = [NoneOf(not_forward_disable)]
 
-  controller_disconnect(controller_id, src, dst_stream, dst, dst_stream)
+  for y in controller_disconnect(controller_id, src, dst_stream, dst, dst_stream):
+    yield y
 
   yield master.expect(AllOf(talker_expect + listener_expect +
         controller_expect + analyzer_expected + forward_disable + not_forward_disable))
@@ -373,8 +378,6 @@ def runTest(args):
     for y in action_function(action[1:]):
       yield y
 
-    for y in check_clear_clock_masters():
-      yield y
 
   # Allow everything time to settle (in case an error is being generated)
   yield base.sleep(5)
@@ -418,7 +421,6 @@ if __name__ == "__main__":
   parser.add_argument('--user', dest='user', nargs='?', help="username (selects board setup from json config file)", default=getpass.getuser())
   parser.add_argument('--seed', dest='seed', type=int, nargs='?', help="random seed", default=None)
   parser.add_argument('--test', dest='test', nargs='?', help="name of .json test configuration file", required=True)
-  parser.add_argument('--workdir', dest='workdir', nargs='?', help="working directory", default='./')
   parser.add_argument('--logdir', dest='logdir', nargs='?', help="folder to write all log files to", default="logs")
   args = parser.parse_args()
 
