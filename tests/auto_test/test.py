@@ -390,11 +390,19 @@ def get_eth_id(args):
 
   return eth[args.user]
 
+def open_json(filename):
+  """ Open a json file. Add the '.json' extension if required.
+  """
+  if not os.path.exists(filename):
+    filename += '.json'
+  return open(filename)
+
+
 if __name__ == "__main__":
   parser = base.getParser()
   parser.add_argument('--config', dest='config', nargs='?', help="name of .json file", required=True)
   parser.add_argument('--user', dest='user', nargs='?', help="username (selects board setup from json config file)", default=getpass.getuser())
-  parser.add_argument('--seed', dest='seed', type=int, nargs='?', help="random seed", default=1)
+  parser.add_argument('--seed', dest='seed', type=int, nargs='?', help="random seed", default=None)
   parser.add_argument('--workdir', dest='workdir', nargs='?', help="working directory", default='./')
   parser.add_argument('--test_file', dest='test_file', nargs='?', help="name of .json test configuration file", required=True)
   args = parser.parse_args()
@@ -403,23 +411,25 @@ if __name__ == "__main__":
 
   eth_id = get_eth_id(args)
 
-  with open(args.config) as f:
+  with open_json(args.config) as f:
     topology = json.load(f)
-    endpoints = topology['endpoints']
-    analyzers = topology['analyzers']
-    connections = topology['port_connections']
 
-  if not os.path.exists(args.test_file):
-    args.test_file += '.json'
-
-  with open(args.test_file) as f:
+  # Read the test file into class structure
+  with open_json(args.test_file) as f:
     test_steps = json.load(f, object_hook=generator.json_hooks)
+
+  # Read the test file into a standard Python data structure
+  with open_json(args.test_file) as f:
+    test_config = json.load(f)
+
+  set_seed(args, test_config)
 
   # Create the master to pass to each process
   master = master.Master()
 
-  log_info("Running test with seed {seed}".format(seed=args.seed))
-  random.seed(args.seed)
+  endpoints = topology['endpoints']
+  analyzers = topology['analyzers']
+  connections = topology['port_connections']
 
   start_analyzers(rootDir, args, master, analyzers)
   start_endpoints(rootDir, args, endpoints, master, analyzers)
