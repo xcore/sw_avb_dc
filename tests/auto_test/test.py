@@ -375,7 +375,7 @@ if __name__ == "__main__":
   random.seed(args.seed)
 
   start_analyzers(rootDir, args, master, analyzers)
-  start_endpoints(args, endpoints, master, analyzers)
+  start_endpoints(rootDir, args, endpoints, master, analyzers)
 
   # Create a controller process to send AVB commands to
   controller_dir = os.path.join(rootDir, 'appsval_avb', 'controller', 'avb')
