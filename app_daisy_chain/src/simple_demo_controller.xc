@@ -97,8 +97,6 @@ avb_1722_1_acmp_status_t avb_listener_on_talker_connect(client interface avb_int
   int map[AVB_NUM_MEDIA_OUTPUTS/AVB_NUM_SINKS];
   for (int i = 0; i < channels_per_stream; i++) map[i] = sink_num ? sink_num*channels_per_stream+i  : sink_num+i;
 
-  avb.set_device_media_clock_type(0, DEVICE_MEDIA_CLOCK_INPUT_STREAM_DERIVED);
-
   debug_printf("CONNECTING Listener sink #%d -> Talker stream %x%x, DA: %x:%x:%x:%x:%x:%x\n", sink_num, stream_id[0], stream_id[1],
                                                                                               dest_addr[0], dest_addr[1], dest_addr[2],
                                                                                               dest_addr[3], dest_addr[4], dest_addr[5]);
