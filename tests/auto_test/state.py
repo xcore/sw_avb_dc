@@ -1,4 +1,5 @@
 import xmos.test.base as base
+import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
 ''' Track the current connections in the topology.
@@ -216,3 +217,67 @@ def get_controller_state(src, src_stream, dst, dst_stream, action):
   log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
   return ('controller_' + state + '_' + action)
 
+def get_loops_for_node(node, path_so_far, loops):
+  """ Recursive function that looks through connections to search for loops.
+      Any loop that is found is added to the loops list.
+  """
+  for c,n in active_connections.iteritems():
+    if not n or (node != c.talker.src):
+      continue
+
+    dest = c.listener.dst
+    if dest in path_so_far:
+      # Only add this as a loop if the destination is the same as the start node.
+      # Otherwise this is a path that has joined a loop.
+      if dest == path_so_far[0]:
+        loops += [path_so_far + [dest]]
+
+    else:
+      get_loops_for_node(dest, path_so_far + [dest], loops)
+
+def get_loops():
+  """ Find all the loops in the current set of connections.
+  """
+  loops = []
+
+  for t,n in active_talkers.iteritems():
+    # If the endpoint is not active or already in a loop then ignore it
+    if not n or any(t.src in loop for loop in loops):
+      continue
+
+    get_loops_for_node(t.src, [t.src], loops)
+
+  log_debug("get_loops got %s" % loops)
+  return loops
+
+def is_in_loop(node):
+  loops = get_loops()
+  for loop in loops:
+    if node in loop:
+      return True
+  return False
+
+def is_clock_source_master(node):
+  return clock_source_master.get(node, 0)
+
+def set_clock_source_master(node):
+  clock_source_master[node] = 1
+
+def set_clock_source_slave(node):
+  clock_source_master[node] = 0
+
+
+if __name__ == "__main__":
+  # A basic test for the loop detection logic
+  xmos_logging.configure_logging(level_console='INFO')
+  print get_loops()
+  connect("dc0", 0, "dc1", 0)
+  print get_loops()
+  connect("dc1", 0, "dc0", 0)
+  print get_loops()
+  disconnect("dc1", 0, "dc0", 0)
+  print get_loops()
+  connect("dc1", 0, "sp0", 0)
+  print get_loops()
+  connect("sp0", 0, "dc0", 0)
+  print get_loops()

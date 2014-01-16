@@ -91,19 +91,50 @@ def print_title(title):
 def guid_in_ascii(ep):
   return get_avb_id(args.user, ep).encode('ascii', 'ignore')
 
+def check_set_clock_masters():
+  for loop in state.get_loops():
+    loop_master = loop[0]
+    for ep_name in loop:
+      if state.is_clock_source_master(ep_name):
+        loop_master = ep
+        break
+
+    if not state.is_clock_source_master(loop_master):
+      ep = entity_by_name(loop_master)
+      master.sendLine(controller_id, "set_clock_source_master 0x%s" % (guid_in_ascii(ep)))
+      state.set_clock_source_master(ep['name'])
+
+      controller_expect = [Expected(controller_id, "Success", 5)]
+      ep_expect = [Expected(loop_master, "Setting clock source: LOCAL_CLOCK", 5)]
+      yield master.expect(AllOf(controller_expect + ep_expect))
+
+def check_clear_clock_masters():
+  for name,ep in get_all_endpoints().iteritems():
+    if state.is_clock_source_master(name) and not state.is_in_loop(ep['name']):
+      master.sendLine(controller_id, "set_clock_source_slave 0x%s" % (guid_in_ascii(ep)))
+      state.set_clock_source_slave(ep['name'])
+
+      controller_expect = [Expected(controller_id, "Success", 5)]
+      ep_expect = [Expected(ep['name'], "Setting clock source: INPUT_STREAM_DERIVED", 5)]
+      yield master.expect(AllOf(controller_expect + ep_expect))
+
 def controller_connect(controller_id, src, src_stream, dst, dst_stream):
   talker_ep = entity_by_name(src)
   listener_ep = entity_by_name(dst)
+
+  state.connect(src, src_stream, dst, dst_stream)
+  for y in check_set_clock_masters():
+    yield y
+
   master.sendLine(controller_id, "connect 0x%s %d 0x%s %d" % (
         guid_in_ascii(talker_ep), src_stream, guid_in_ascii(listener_ep), dst_stream))
-  state.connect(src, src_stream, dst, dst_stream)
 
 def controller_disconnect(controller_id, src, src_stream, dst, dst_stream):
   talker_ep = entity_by_name(src)
   listener_ep = entity_by_name(dst)
+  state.disconnect(src, src_stream, dst, dst_stream)
   master.sendLine(controller_id, "disconnect 0x%s %d 0x%s %d" % (
         guid_in_ascii(talker_ep), src_stream, guid_in_ascii(listener_ep), dst_stream))
-  state.disconnect(src, src_stream, dst, dst_stream)
 
 def controller_enumerate(controller_id, avb_ep):
   entity_id = entity_by_name(avb_ep)
@@ -134,7 +165,7 @@ def action_enumerate(params_list):
   controller_expect = sequences.controller_enumerate_seq(controller_id, descriptors)
   controller_enumerate(controller_id, entity_id)
 
-  return master.expect(controller_expect)
+  yield master.expect(controller_expect)
 
 def action_connect(params_list):
   src = params_list[0]
@@ -163,9 +194,10 @@ def action_connect(params_list):
   if not_forward_enable:
     not_forward_enable = [NoneOf(not_forward_enable)]
 
-  controller_connect(controller_id, src, src_stream, dst, dst_stream)
+  for y in controller_connect(controller_id, src, src_stream, dst, dst_stream):
+    yield y
 
-  return master.expect(AllOf(talker_expect + listener_expect +
+  yield master.expect(AllOf(talker_expect + listener_expect +
         controller_expect + analyzer_expected + forward_enable + not_forward_enable))
 
 def action_disconnect(params_list):
@@ -197,13 +229,13 @@ def action_disconnect(params_list):
 
   controller_disconnect(controller_id, src, dst_stream, dst, dst_stream)
 
-  return master.expect(AllOf(talker_expect + listener_expect +
+  yield master.expect(AllOf(talker_expect + listener_expect +
         controller_expect + analyzer_expected + forward_disable + not_forward_disable))
 
 def action_continue(params_list):
   """ Do nothing
   """
-  return master.expect(None)
+  yield master.expect(None)
 
 def chk(master, endpoints):
   return master.expect(Expected(controller_id, "Found %d entities" % len(endpoints), 15))
@@ -324,12 +356,27 @@ def runTest(args):
     print_title("Test %d - %s" % (test_num+1, ts))
     action = ts.split(' ')
     action_function = eval('action_%s' % action[0])
-    yield action_function(action[1:])
+    for y in action_function(action[1:]):
+      yield y
+
+    for y in check_clear_clock_masters():
+      yield y
 
   # Allow everything time to settle (in case an error is being generated)
   yield base.sleep(5)
   base.testComplete(reactor)
 
+def set_seed(args, test_config):
+  """ Set the seed from the config file, unless overridden by the command-line
+  """
+  seed = 1
+  if args.seed is not None:
+    seed = args.seed
+  elif 'seed' in test_config:
+    seed = test_config['seed']
+
+  log_info("Running test with seed {seed}".format(seed=seed))
+  random.seed(seed)
 
 def get_eth_id(args):
   """ Get the ethernet interface ID for the current user
