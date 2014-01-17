@@ -1,0 +1,9 @@
+{
+  "seed" : 7,
+  "sequence": [
+    { "command" : "connect dc0 0 dc2 0" },
+    { "command" : "connect dc0 0 dc1 0" },
+    { "command" : "connect dc0 0 dc3 0" },
+    { "command" : "disconnect dc0 0 dc2 0" }
+  ]
+}
