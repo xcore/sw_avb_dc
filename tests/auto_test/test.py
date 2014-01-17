@@ -435,15 +435,16 @@ if __name__ == "__main__":
   with open_json(args.config) as f:
     topology = json.load(f)
 
-  # Read the test file into class structure
-  with open_json(args.test) as f:
-    test_steps = json.load(f, object_hook=generator.json_hooks)
-
   # Read the test file into a standard Python data structure
   with open_json(args.test) as f:
     test_config = json.load(f)
 
+  # Need to set the seed before reading the test_steps as it uses random
   set_seed(args, test_config)
+
+  # Read the test file into class structure
+  with open_json(args.test) as f:
+    test_steps = json.load(f, object_hook=generator.json_hooks)
 
   # Create the master to pass to each process
   master = master.Master()

@@ -92,7 +92,7 @@ def dump_state():
     if n:
       log_debug("Clock source master %s" % c)
 
-  draw_state()
+  draw_state(sorted(get_all_endpoints().keys()))
 
 def connect(src, src_stream, dst, dst_stream):
   """ A connection will occur if the connection doesn't already exist
@@ -309,16 +309,31 @@ def get_talker_for_listener(listener):
       return c.talker.src
   return None
 
-def draw_state():
+def get_max_listener_index(ep_names, talker):
+  max_listener_index = 0
+  for listener in get_listeners_for_talker(talker):
+    listener_index = ep_names.index(listener)
+    if listener_index > max_listener_index:
+      max_listener_index = listener_index
+
+  return max_listener_index
+
+def get_header(ep_name):
+  if is_clock_source_master(ep_name):
+    return " *======* "
+  else:
+    return " +======+ "
+
+def draw_state(ep_names):
   """ Draw a graph of the connections.
       Creates the endpoints down the left.
       Creates connections at a depth to right which depends on the talker index.
   """
   ep_offset = 0
   ep_num = 0
-  ep_names = sorted(get_all_endpoints().keys())
-  active_talkers = []
+  active_talkers = set()
   num_endpoints = len(ep_names)
+  lines = []
 
   # The endpoints are rendered over 5 lines (start, out, name, in, end)
   # and then there is a 1-line gap between.
@@ -327,20 +342,16 @@ def draw_state():
     ep_name = ep_names[ep_num]
     line = ""
     if ep_offset == 0 or ep_offset == 4:
-      line += " +======+ "
+      line += get_header(ep_name)
       line += "  " + non_connection_line(ep_names, active_talkers)
 
     elif ep_offset == 1:
       line += " |      | "
       if talker_active_count(ep_name, 0):
-        max_listener_index = 0
-        for listener in get_listeners_for_talker(ep_name):
-          listener_index = ep_names.index(listener)
-          if listener_index > max_listener_index:
-            max_listener_index = listener_index
+        max_listener_index = get_max_listener_index(ep_names, ep_name)
 
         if max_listener_index > ep_num:
-          active_talkers += [ep_name]
+          active_talkers |= set([ep_name])
         else:
           if ep_name in active_talkers:
             active_talkers.remove(ep_name)
@@ -359,9 +370,10 @@ def draw_state():
         talker = get_talker_for_listener(ep_name)
         talker_index = ep_names.index(talker)
         if talker_index > ep_num:
-          active_talkers += [talker]
+          active_talkers |= set([talker])
         else:
-          if talker in active_talkers:
+          max_listener_index = get_max_listener_index(ep_names, talker)
+          if max_listener_index <= ep_num and talker in active_talkers:
             active_talkers.remove(talker)
 
         line += "<-"
@@ -376,20 +388,53 @@ def draw_state():
       ep_offset = -1
 
     ep_offset += 1
+    lines += [line]
+
+  for line in lines:
     log_debug(line)
 
 
 if __name__ == "__main__":
-  # A basic test for the loop detection logic
+  # Test cases for the loop detection and state drawing
   xmos_logging.configure_logging(level_console='INFO', level_file='DEBUG')
-  print get_loops()
+
+  ep_names = [ "dc0", "dc1", "dc2", "dc3" ]
   connect("dc0", 0, "dc1", 0)
-  print get_loops()
   connect("dc1", 0, "dc0", 0)
   print get_loops()
+  draw_state(ep_names)
+
   disconnect("dc1", 0, "dc0", 0)
-  print get_loops()
   connect("dc1", 0, "dc2", 0)
-  print get_loops()
   connect("dc2", 0, "dc0", 0)
   print get_loops()
+  draw_state(ep_names)
+
+  disconnect("dc2", 0, "dc0", 0)
+  disconnect("dc1", 0, "dc2", 0)
+  print get_loops()
+  draw_state(ep_names)
+
+  connect("dc3", 0, "dc0", 0)
+  connect("dc0", 0, "dc3", 0)
+  print get_loops()
+  draw_state(ep_names)
+
+  set_clock_source_master("dc0")
+
+  connect("dc1", 0, "dc2", 0)
+  print get_loops()
+  draw_state(ep_names)
+
+  disconnect("dc1", 0, "dc2", 0)
+  disconnect("dc3", 0, "dc0", 0)
+  disconnect("dc0", 0, "dc3", 0)
+
+  connect("dc3", 0, "dc2", 0)
+  connect("dc2", 0, "dc3", 0)
+  connect("dc0", 0, "dc1", 0)
+  connect("dc1", 0, "dc0", 0)
+  set_clock_source_master("dc3")
+  print get_loops()
+  draw_state(ep_names)
+
