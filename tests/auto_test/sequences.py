@@ -137,8 +137,8 @@ def hook_unregister_error(args):
   for pattern in patterns:
     process.unregisterErrorPattern(pattern)
 
-GLITCH_DETECTED_PATTERN = ": glitch detected"
-LOST_SIGNAL_PATTERN = ": Lost signal"
+GLITCH_DETECTED_PATTERN = "glitch detected"
+LOST_SIGNAL_PATTERN = "Lost signal"
 
 def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
   analyzer = listener_ep['analyzer']
@@ -152,7 +152,9 @@ def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, lis
                   siggen_frequency(talker_ep, i)),
                 timeout_time=5,
                 completionFn=hook_register_error,
-                completionArgs=(analyzer_name, [GLITCH_DETECTED_PATTERN, LOST_SIGNAL_PATTERN]))])
+                completionArgs=(analyzer_name, [
+                  "Channel %d: %s" % (i + analyzer_offset, GLITCH_DETECTED_PATTERN),
+                  "Channel %d: %s" % (i + analyzer_offset, LOST_SIGNAL_PATTERN)]))])
       for i in range(0, 2)
   ]
   return signal_detect
@@ -170,13 +172,15 @@ def analyzer_listener_disconnect_seq(talker_ep, talker_stream_num, listener_ep, 
     Expected(analyzer_name, "Channel %d: Lost signal" % (i + analyzer_offset),
         timeout_time=5,
         completionFn=hook_unregister_error,
-        completionArgs=(analyzer_name, [GLITCH_DETECTED_PATTERN]))
+        completionArgs=(analyzer_name, [
+          "Channel %d: %s" % (i + analyzer_offset, GLITCH_DETECTED_PATTERN)]))
       for i in range(0, 2)
   ]
 
   # Unregister the lost signal error pattern now
   process = getActiveProcesses()[analyzer_name]
-  process.unregisterErrorPattern(LOST_SIGNAL_PATTERN)
+  for i in range(0, 2):
+    process.unregisterErrorPattern("Channel %d: %s" % (i + analyzer_offset, LOST_SIGNAL_PATTERN))
 
   return signal_lost
 
