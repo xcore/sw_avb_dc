@@ -300,9 +300,11 @@ def ptp_startup_two_port(e, grandmaster, user):
   """
   slave_seq = []
   if grandmaster and (get_avb_id(user, e) != get_avb_id(user, grandmaster)):
-      slave_seq = [Sequence(
-                    [Expected(e['name'], 'PTP Port \d+ Role: Slave', 40),
-                     Expected(e['name'], 'PTP sync locked', 5)])]
+    # The length of time to sync will depend on the total number of endpoints
+    sync_lock_time = 3 * len(get_all_endpoints())
+    slave_seq = [Sequence(
+                  [Expected(e['name'], 'PTP Port \d+ Role: Slave', 40),
+                   Expected(e['name'], 'PTP sync locked', sync_lock_time)])]
 
   return Sequence(
             [Expected(e['name'], 'PTP Port 0 Role: Master', 40),
