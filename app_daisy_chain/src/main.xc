@@ -358,6 +358,7 @@ void application_task(client interface avb_interface avb, server interface avb_1
               if (values_length == 1) {
                 aem_identify_control_value = values[0];
                 p_leds <: aem_identify_control_value;
+                if (aem_identify_control_value) debug_printf("IDENTIFY Ping\n");
                 return_status = AECP_AEM_STATUS_SUCCESS;
               }
               else
