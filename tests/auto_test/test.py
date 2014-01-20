@@ -36,55 +36,6 @@ controller_id = 'c1'
 exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
 
-def find_path(graph, start, end, path=[]):
-  path = path + [start]
-  if start == end:
-    return path
-  if not graph.has_key(start):
-    return None
-  for node in graph[start]:
-    if node not in path:
-      newpath = find_path(graph, node, end, path)
-      if newpath: return newpath
-  return None
-
-def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, nodes):
-  if (state.connected(src, src_stream, dst, dst_stream) or
-      state.listener_active_count(dst, dst_stream)):
-    # Connection will have no effect
-    return False
-
-  # Look for all nodes past this one in the path. If one of them is connected to
-  # this stream then this node won't see enable, otherwise it should expect to
-  found = False
-  for n in nodes:
-    if found:
-      if state.connected(src, src_stream, n):
-        return False
-
-    elif n == node:
-      found = True
-
-  return True
-
-def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node, nodes):
-  if not state.connected(src, src_stream, dst, dst_stream):
-    # Disconnection will have no effect
-    return False
-
-  # Look for all nodes past this one in the path. If one of them is connected to
-  # this stream then this node won't see disable, otherwise it should expect to
-  found = False
-  for n in nodes:
-    if found:
-      if state.connected(src, src_stream, n):
-        return False
-
-    elif n == node:
-      found = True
-
-  return True
-
 def print_title(title):
     log_info("\n%s\n%s\n" % (title, '=' * len(title)))
 
@@ -182,9 +133,9 @@ def action_connect(params_list):
 
   # Find the path between the src and dst and check whether there are any nodes between them
   forward_enable = []
-  nodes = get_path_endpoints(find_path(connections, src, dst))
+  nodes = get_path_endpoints(state.find_path(connections, src, dst))
   for node in get_dual_port_nodes(nodes):
-    if node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, nodes):
+    if state.node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, connections):
       forward_enable += sequences.expected_seq('stream_forward_enable')(args.user,
         entity_by_name(node), entity_by_name(src))
 
@@ -215,9 +166,9 @@ def action_disconnect(params_list):
 
   # Find the path between the src and dst and check whether there are any nodes between them
   forward_disable = []
-  nodes = get_path_endpoints(find_path(connections, src, dst))
+  nodes = get_path_endpoints(state.find_path(connections, src, dst))
   for node in get_dual_port_nodes(nodes):
-    if node_will_see_stream_disable(src, src_stream, dst, dst_stream, node, nodes):
+    if state.node_will_see_stream_disable(src, src_stream, dst, dst_stream, node, connections):
       forward_disable += sequences.expected_seq('stream_forward_disable')(args.user,
         entity_by_name(node), entity_by_name(src))
 
