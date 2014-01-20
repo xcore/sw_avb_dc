@@ -426,7 +426,7 @@ if __name__ == "__main__":
   controller = ControllerProcess('c1', master, output_file="cl.log")
 
   # Call python with unbuffered mode to enable us to see each line as it happens
-  reactor.spawnProcess(controller, sys.executable, [sys.executable, '-u', 'controller.py', '--batch', '-i', eth_id],
+  reactor.spawnProcess(controller, sys.executable, [sys.executable, '-u', 'controller.py', '--batch', '--test_mode', '-i', eth_id],
       env=os.environ, path=controller_dir)
 
   base.testStart(runTest, args)
