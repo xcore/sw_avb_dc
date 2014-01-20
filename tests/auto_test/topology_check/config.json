@@ -1,0 +1,18 @@
+{"sequence": [
+    { "command" : "ping dc0" },
+    { "command" : "ping dc1" },
+    { "command" : "ping dc2" },
+    { "command" : "ping dc3" },
+    { "command" : "connect dc0 0 dc1 0" },
+    { "command" : "connect dc1 0 dc2 0" },
+    { "command" : "connect dc2 0 dc3 0" },
+    { "command" : "disconnect dc0 0 dc1 0" },
+    { "command" : "disconnect dc1 0 dc2 0" },
+    { "command" : "disconnect dc2 0 dc3 0" },
+    { "command" : "connect dc3 0 dc2 0" },
+    { "command" : "connect dc2 0 dc1 0" },
+    { "command" : "connect dc1 0 dc0 0" },
+    { "command" : "disconnect dc3 0 dc2 0" },
+    { "command" : "disconnect dc2 0 dc1 0" },
+    { "command" : "disconnect dc1 0 dc0 0" }
+]}
