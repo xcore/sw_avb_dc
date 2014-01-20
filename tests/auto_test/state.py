@@ -2,7 +2,7 @@ import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
-from endpoints import get_all_endpoints
+from endpoints import get_all_endpoints, get_path_endpoints
 
 ''' Track the current connections in the topology.
      - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
@@ -273,6 +273,96 @@ def set_clock_source_master(node):
 
 def set_clock_source_slave(node):
   clock_source_master[node] = 0
+
+def find_path(graph, start, end, path=[]):
+  """ Build up the path between the specified start and end point
+  """
+  path = path + [start]
+  if start == end:
+    return path
+  if not graph.has_key(start):
+    return None
+  for node in graph[start]:
+    if node not in path:
+      newpath = find_path(graph, node, end, path)
+      if newpath:
+        return newpath
+  return None
+
+def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, connections):
+  """ Determine whether a given node will see the stream between src/dst as a new
+      stream. Returns True if it will be a new stream, False if it is an existing
+      stream.
+  """
+  log_debug("node_will_see_stream_enable %s ?" % node)
+  if (connected(src, src_stream, dst, dst_stream) or
+      listener_active_count(dst, dst_stream)):
+    # Connection will have no effect
+    log_debug("No, connection will not happen")
+    return False
+
+  # Look at all connections of this src stream
+  for c,n in active_connections.iteritems():
+    if not n:
+      continue
+
+    if c.talker.src != src or c.talker.src_stream != src_stream:
+      continue
+
+    nodes = find_path(connections, src, c.listener.dst)
+    log_debug("What about path %s?" % nodes)
+      
+    # Look for all nodes past this one in the path. If one of them is connected to
+    # this stream then this node won't see enable, otherwise it should expect to
+    past_node = False
+    for n in nodes:
+      if past_node:
+        if connected(src, src_stream, n):
+          log_debug("No forwarding, node %s is connected beyond %s?" % (n, node))
+          return False
+
+      elif n == node:
+        past_node = True
+
+  return True
+
+def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node, connections):
+  """ Determine whether a given node will see being disabled if it is turned off.
+  """
+  log_debug("node_will_see_stream_disable %s ?" % node)
+  if not connected(src, src_stream, dst, dst_stream):
+    # Disconnection will have no effect
+    log_debug("No, stream not connected")
+    return False
+
+  # Look at all connections of this src stream
+  for c,n in active_connections.iteritems():
+    if not n:
+      continue
+
+    if c.talker.src != src or c.talker.src_stream != src_stream:
+      continue
+
+    nodes = find_path(connections, src, c.listener.dst)
+    log_debug("What about path %s?" % nodes)
+      
+    # Look for all nodes past this one in the path. If one of them is connected to
+    # this stream then this node won't see disable, otherwise it should expect to
+    past_node = False
+    for n in nodes:
+      if n == dst:
+        # Ignore the current connection
+        continue
+
+      if past_node:
+        if connected(src, src_stream, n):
+          log_debug("No forwarding, node %s is connected beyond %s?" % (n, node))
+          return False
+
+      elif n == node:
+        past_node = True
+
+  return True
 
 def connection_line(ep_names, ep_num, active_talkers):
   line = ""
