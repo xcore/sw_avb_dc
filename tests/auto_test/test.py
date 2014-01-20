@@ -188,6 +188,18 @@ def action_disconnect(params_list):
   yield master.expect(AllOf(talker_expect + listener_expect +
         controller_expect + analyzer_expected + forward_disable + not_forward_disable))
 
+def action_ping(params_list):
+  node = params_list[0]
+  ep = entity_by_name(node)
+
+  node_expect = [Expected(ep['name'], "IDENTIFY Ping", 5)]
+  controller_expect = [Expected(controller_id, "Success", 5)]
+
+  master.sendLine(controller_id, "identify 0x%s on" % guid_in_ascii(ep))
+  master.sendLine(controller_id, "identify 0x%s off" % guid_in_ascii(ep))
+
+  yield master.expect(AllOf(node_expect + controller_expect))
+
 def action_continue(params_list):
   """ Do nothing
   """
