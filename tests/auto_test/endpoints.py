@@ -75,6 +75,6 @@ def start_endpoints(rootDir, args, endpoints, master, analyzers):
   for ep in endpoints:
     analyzer_name = ep['analyzer']
     if analyzer_name not in get_all_analyzers():
-      log_error("Invalid analyzer: %s" % analyzer_name)
+      log_error("Invalid analyzer '%s' for endpoint '%s'" % (analyzer_name, ep['name']))
     ep['analyzer'] = get_all_analyzers()[analyzer_name]
 

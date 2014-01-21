@@ -189,8 +189,11 @@ def action_disconnect(params_list):
         controller_expect + analyzer_expected + forward_disable + not_forward_disable))
 
 def action_ping(params_list):
-  node = params_list[0]
-  ep = entity_by_name(node)
+  """ Ping a node with and check that it responds accordingly. This is used to test
+      connectivity.
+  """
+  node_name = params_list[0]
+  ep = entity_by_name(node_name)
 
   node_expect = [Expected(ep['name'], "IDENTIFY Ping", 5)]
   controller_expect = [Expected(controller_id, "Success", 5)]
@@ -200,8 +203,86 @@ def action_ping(params_list):
 
   yield master.expect(AllOf(node_expect + controller_expect))
 
+def action_link_downup(params_list):
+  """ Expect all connections which bridge the relay to be lost and restored if there
+      is a quick link down/up event. The first argument is the analyzer controlling
+      the relay. The second is the time to sleep before restoring the link.
+  """
+  analyzer_name = params_list[0]
+  sleep_time = int(params_list[1])
+  expected = []
+
+  # Expect all the connections which cross the relay to be lost
+  for c,n in state.active_connections.iteritems():
+    if n and analyzer_name in state.find_path(connections, c.talker.src, c.listener.dst):
+      expected += sequences.analyzer_listener_disconnect_seq(
+                      entity_by_name(c.talker.src), c.talker.src_stream,
+                      entity_by_name(c.listener.dst), c.listener.dst_stream)
+
+  # Send the command to open the relay '(r)elay (o)pen'
+  master.sendLine(analyzer_name, "r o")
+
+  if expected:
+    yield master.expect(AllOf(expected))
+  else:
+    yield master.expect(None)
+
+  # Perform a sleep as defined by the second argument
+  yield base.sleep(sleep_time)
+
+  expected = []
+
+  # Expect all the connections which cross the relay to be restored
+  for c,n in state.active_connections.iteritems():
+    if n and analyzer_name in state.find_path(connections, c.talker.src, c.listener.dst):
+      expected += sequences.analyzer_listener_connect_seq(
+                      entity_by_name(c.talker.src), c.talker.src_stream,
+                      entity_by_name(c.listener.dst), c.listener.dst_stream)
+
+  # Send the command to close the relay '(r)elay (c)lose'
+  master.sendLine(analyzer_name, "r c")
+
+  if expected:
+    yield master.expect(AllOf(expected))
+  else:
+    yield master.expect(None)
+
+def action_link_up(params_list):
+  analyzer_name = params_list[0]
+  # Send the command to close the relay '(r)elay (c)lose'
+  master.sendLine(analyzer_name, "r c")
+  # Don't expect anything to happen just from closing the relay
+  yield master.expect(None)
+
+
+def action_check_connections(params_list):
+  """ Check that the current state the controller reads from the endpoints matches
+      the state the test framework expects.
+  """
+  expected = []
+
+  # Expect all connections to be restored
+  for c,n in state.active_connections.iteritems():
+    if n:
+      expected += [Expected(controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
+                      guid_in_ascii(entity_by_name(c.talker.src)), c.talker.src_stream,
+                      guid_in_ascii(entity_by_name(c.listener.dst)), c.listener.dst_stream), 10)]
+
+  master.sendLine(controller_id, "show connections")
+
+  if expected:
+    yield master.expect(AllOf(expected))
+  else:
+    yield master.expect(NoneOf([Expected(controller_id, "->", 5)]))
+
+def action_sleep(params_list):
+  """ Do nothing for the defined time.
+  """
+  yield base.sleep(int(params_list[0]))
+  yield master.expect(None)
+
 def action_continue(params_list):
-  """ Do nothing
+  """ Do nothing.
   """
   yield master.expect(None)
 
@@ -393,7 +474,8 @@ if __name__ == "__main__":
     os.makedirs(args.logdir)
 
   xmos_logging.configure_logging(level_file='DEBUG',
-      filename=os.path.join(args.logdir, args.logfile))
+      filename=os.path.join(args.logdir, args.logfile),
+      summary_filename=args.summaryfile)
 
   eth_id = get_eth_id(args)
 
