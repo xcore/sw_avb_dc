@@ -2,7 +2,7 @@ import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
-from endpoints import get_all_endpoints, get_path_endpoints
+from endpoints import get_all_endpoints
 
 ''' Track the current connections in the topology.
      - active_connections contains the list of connections (src:src_stream->dst:dst_stream)

@@ -2,15 +2,12 @@ import re
 
 import xmos.test.base as base
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
-from analyzers import siggen_frequency
+import analyzers
+import endpoints
 import state
 
-def get_avb_id(user, ep):
-    user_config = ep['users'][user]
-    return user_config['avb_id']
-
 def stream_id_from_guid(user, ep, num):
-    stream_id = get_avb_id(user, ep).replace("fffe","") + "000" + str(num)
+    stream_id = endpoints.get_avb_id(user, ep).replace("fffe","") + "000" + str(num)
     return stream_id.upper()
 
 def expected_seq(name):
@@ -149,7 +146,7 @@ def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, lis
   signal_detect = [
     Sequence([Expected(analyzer_name, "Channel %d: Signal detected" % (i + analyzer_offset), 10),
               Expected(analyzer_name, "Channel %d: Frequency %d" % (i + analyzer_offset,
-                  siggen_frequency(talker_ep, i)),
+                  analyzers.siggen_frequency(talker_ep, i)),
                 timeout_time=5,
                 completionFn=hook_register_error,
                 completionArgs=(analyzer_name, [
@@ -161,6 +158,34 @@ def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, lis
 
 def analyzer_redundant_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
   return []
+
+def analyzer_qav_seq(src, dst, command, connections, user):
+  """ Get the expected sequence for any QAV analyzers active.
+  """
+  analyzer_expect = []
+
+  for analyzer_name,analyzer in analyzers.get_all_analyzers().iteritems():
+    if analyzer['type'] != 'qav':
+      continue
+
+    # If the analyzer is a QAV analyzer then it will detect the stream through
+    # the packets being forwarded through it
+    if analyzer_name in state.find_path(connections, src, dst):
+      guid_string = endpoints.guid_in_ascii(user, endpoints.entity_by_name(src))
+      stream_string = endpoints.stream_from_guid(guid_string)
+      if command == 'connect':
+        action_string = "Adding"
+        completionFn = hook_register_error
+      else:
+        action_string = "Removing"
+        completionFn = hook_unregister_error
+
+      analyzer_expect += [Expected(analyzer_name, "%s stream 0x%s" % (action_string, stream_string),
+            timeout_time=10,
+            completionFn=completionFn,
+            completionArgs=(analyzer_name, ['ERROR']))]
+
+  return analyzer_expect
 
 def analyzer_listener_disconnect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
   analyzer = listener_ep['analyzer']
