@@ -216,6 +216,7 @@
     "analyzers" : [
         {
             "name" : "analyzer0",
+            "type" : "audio",
             "port" : 12348,
             "base" : 0,
             "frequencies" : {
@@ -235,6 +236,7 @@
         },
         {
             "name" : "analyzer1",
+            "type" : "audio",
             "port" : 12349,
             "base" : 4,
             "frequencies" : {

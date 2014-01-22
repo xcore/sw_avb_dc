@@ -33,6 +33,16 @@ def get_path_endpoints(path):
 def entity_by_name(name):
   return all_endpoints.get(name, None)
 
+def get_avb_id(user, ep):
+    user_config = ep['users'][user]
+    return user_config['avb_id']
+
+def guid_in_ascii(user, ep):
+  return get_avb_id(user, ep).encode('ascii', 'ignore')
+
+def stream_from_guid(guid):
+  return guid[0:4] + guid[-6:] + "0000"
+
 def startXrun(combined_args):
   (name, process, adapter_id, bin, args) = combined_args
 
