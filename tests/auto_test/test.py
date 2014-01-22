@@ -142,6 +142,13 @@ def action_connect(params_list):
       forward_enable += sequences.expected_seq('stream_forward_enable')(args.user,
         entity_by_name(node), entity_by_name(src))
 
+  # If there are any nodes in the chain then they must be seen to start forwarding before
+  # the listener can be expected to see the stream
+  if forward_enable:
+    listener_expect = [Sequence([AllOf(forward_enable), AllOf(listener_expect + analyzer_expected)])]
+  else:
+    listener_expect = [AllOf(listener_expect + analyzer_expected)]
+
   # Expect not to see any enables from other nodes
   not_forward_enable = []
   temp_nodes = set(get_all_endpoints().keys()) - set(nodes)
@@ -156,7 +163,7 @@ def action_connect(params_list):
     yield y
 
   yield master.expect(AllOf(talker_expect + listener_expect +
-        controller_expect + analyzer_expected + forward_enable + not_forward_enable))
+        controller_expect + not_forward_enable))
 
 def action_disconnect(params_list):
   src = params_list[0]
@@ -175,6 +182,13 @@ def action_disconnect(params_list):
       forward_disable += sequences.expected_seq('stream_forward_disable')(args.user,
         entity_by_name(node), entity_by_name(src))
 
+  # If there are any nodes in the chain then the forward disabling is expected before the
+  # audio will be seen to be lost
+  if forward_disable:
+    listener_expect = [Sequence([AllOf(forward_disable), AllOf(listener_expect + analyzer_expected)])]
+  else:
+    listener_expect = [AllOf(listener_expect + analyzer_expected)]
+
   # Expect not to see any disables from other nodes
   not_forward_disable = []
   temp_nodes = set(get_all_endpoints().keys()) - set(nodes)
@@ -189,7 +203,7 @@ def action_disconnect(params_list):
     yield y
 
   yield master.expect(AllOf(talker_expect + listener_expect +
-        controller_expect + analyzer_expected + forward_disable + not_forward_disable))
+        controller_expect + not_forward_disable))
 
 def action_ping(params_list):
   """ Ping a node with and check that it responds accordingly. This is used to test
