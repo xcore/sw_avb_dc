@@ -1,0 +1,5 @@
+{ "repeat" : 100,
+  "sequence" : [
+    { "command" : "connect dc0 0 dc3 0"},
+    { "command" : "disconnect dc0 0 dc3 0"}
+]}

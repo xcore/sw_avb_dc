@@ -10,28 +10,31 @@ import xmos.test.master as master
 import xmos.test.base as base
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
-from analyzers import get_all_analyzers
+import analyzers
 
 all_endpoints = {}
 
-def get_all_endpoints():
+def get_all():
   return all_endpoints
 
+def get(name):
+  """ Get an endpoint given the name of it.
+  """
+  return all_endpoints.get(name, None)
+
 def get_path_endpoints(path):
-  ''' Given a path, find any endpoints between the start and end endpoints.
-  '''
+  """ Given a path, find any endpoints between the start and end endpoints. This
+      means excluding nodes which are the ports.
+  """
 
   # There should always be more than 2 elements on the path since there are the node + the ports.
   assert len(path) > 2
 
   nodes = []
   for node in path[1:-1]:
-    if entity_by_name(node):
+    if get(node):
       nodes.append(node)
   return nodes
-
-def entity_by_name(name):
-  return all_endpoints.get(name, None)
 
 def get_avb_id(user, ep):
     user_config = ep['users'][user]
@@ -42,6 +45,21 @@ def guid_in_ascii(user, ep):
 
 def stream_from_guid(guid):
   return guid[0:4] + guid[-6:] + "0000"
+
+def determine_grandmaster(user):
+  """ From the endpoints described determine which will be the grandmaster.
+      It is the node with the lowest MAC address unless there is a switch
+      which has a different priority.
+  """
+  grandmaster = None
+  for name,ep in all_endpoints.iteritems():
+    if not grandmaster:
+      grandmaster = ep
+    else:
+      e_id = get_avb_id(user, ep)
+      if e_id < get_avb_id(user, grandmaster):
+        grandmaster = ep
+  return grandmaster
 
 def startXrun(combined_args):
   (name, process, adapter_id, bin, args) = combined_args
@@ -66,7 +84,7 @@ def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
   reactor.callLater(delay, d.callback, (name, ep, adapter_id, ep_bin, args))
   d.addCallback(startXrun)
 
-def start_endpoints(rootDir, args, endpoints, master, analyzers):
+def start(rootDir, args, endpoints, master):
   delay = random.uniform(0, 10)
   for ep in endpoints:
     name = ep['name']
@@ -84,7 +102,7 @@ def start_endpoints(rootDir, args, endpoints, master, analyzers):
   # Connect up the analyzers to then endpoints
   for ep in endpoints:
     analyzer_name = ep['analyzer']
-    if analyzer_name not in get_all_analyzers():
+    if analyzer_name not in analyzers.get_all():
       log_error("Invalid analyzer '%s' for endpoint '%s'" % (analyzer_name, ep['name']))
-    ep['analyzer'] = get_all_analyzers()[analyzer_name]
+    ep['analyzer'] = analyzers.get_all()[analyzer_name]
 

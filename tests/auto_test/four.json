@@ -13,6 +13,7 @@
                 }
             },
             "ports": 2,
+            "sample_rate" : 96000,
             "out_channels": 4,
             "talker_streams": 1,
             "in_channels": 4,
@@ -66,6 +67,7 @@
                 }
             },
             "ports": 2,
+            "sample_rate" : 96000,
             "out_channels": 4,
             "talker_streams": 1,
             "in_channels": 4,
@@ -119,6 +121,7 @@
                 }
             },
             "ports": 2,
+            "sample_rate" : 96000,
             "out_channels": 4,
             "talker_streams": 1,
             "in_channels": 4,
@@ -172,6 +175,7 @@
                 }
             },
             "ports": 2,
+            "sample_rate" : 96000,
             "out_channels": 4,
             "talker_streams": 1,
             "in_channels": 4,

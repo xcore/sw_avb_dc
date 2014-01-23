@@ -1,0 +1,291 @@
+from xmos.test.process import getEntities, ControllerProcess
+import xmos.test.master as master
+import xmos.test.base as base
+import xmos.test.xmos_logging as xmos_logging
+from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
+from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
+
+import sequences
+import state
+import endpoints
+import analyzers
+import graph
+
+def check_set_clock_masters():
+  for loop in graph.get_loops():
+    loop_master = loop[0]
+    for ep_name in loop:
+      if state.is_clock_source_master(ep_name):
+        loop_master = ep_name
+        break
+
+    if not state.is_clock_source_master(loop_master):
+      ep = endpoints.get(loop_master)
+      master.sendLine(controller_id, "set_clock_source_master 0x%s" % (
+            endpoints.guid_in_ascii(args.user, ep)))
+      state.set_clock_source_master(ep['name'])
+
+      controller_expect = [Expected(controller_id, "Success", 5)]
+      ep_expect = [Expected(loop_master, "Setting clock source: LOCAL_CLOCK", 5)]
+      yield master.expect(AllOf(controller_expect + ep_expect))
+
+def check_clear_clock_masters():
+  for name,ep in endpoints.get_all().iteritems():
+    if state.is_clock_source_master(name) and not graph.is_in_loop(ep['name']):
+      master.sendLine(controller_id, "set_clock_source_slave 0x%s" % (
+            endpoints.guid_in_ascii(args.user, ep)))
+      state.set_clock_source_slave(ep['name'])
+
+      controller_expect = [Expected(controller_id, "Success", 5)]
+      ep_expect = [Expected(ep['name'], "Setting clock source: INPUT_STREAM_DERIVED", 5)]
+      yield master.expect(AllOf(controller_expect + ep_expect))
+
+def controller_connect(controller_id, src, src_stream, dst, dst_stream):
+  talker_ep = endpoints.get(src)
+  listener_ep = endpoints.get(dst)
+
+  state.connect(src, src_stream, dst, dst_stream)
+  for y in check_set_clock_masters():
+    yield y
+
+  master.sendLine(controller_id, "connect 0x%s %d 0x%s %d" % (
+        endpoints.guid_in_ascii(args.user, talker_ep), src_stream,
+        endpoints.guid_in_ascii(args.user, listener_ep), dst_stream))
+
+def controller_disconnect(controller_id, src, src_stream, dst, dst_stream):
+  talker_ep = endpoints.get(src)
+  listener_ep = endpoints.get(dst)
+
+  state.disconnect(src, src_stream, dst, dst_stream)
+  for y in check_clear_clock_masters():
+    yield y
+
+  master.sendLine(controller_id, "disconnect 0x%s %d 0x%s %d" % (
+        endpoints.guid_in_ascii(args.user, talker_ep), src_stream,
+        endpoints.guid_in_ascii(args.user, listener_ep), dst_stream))
+
+def controller_enumerate(controller_id, avb_ep):
+  entity_id = endpoints.get(avb_ep)
+  master.sendLine(controller_id, "enumerate 0x%s" % (
+        endpoints.guid_in_ascii(args.user, entity_id)))
+
+def get_expected(src, src_stream, dst, dst_stream, command):
+  state.dump_state()
+  talker_state = state.get_talker_state(src, src_stream, dst, dst_stream, command)
+  talker_expect = sequences.expected_seq(talker_state)(endpoints.get(src), src_stream)
+
+  listener_state = state.get_listener_state(src, src_stream, dst, dst_stream, command)
+  listener_expect = sequences.expected_seq(listener_state)(endpoints.get(dst), dst_stream)
+  analyzer_state = "analyzer_" + listener_state
+  analyzer_expect = sequences.expected_seq(analyzer_state)(endpoints.get(src), src_stream,
+      endpoints.get(dst), dst_stream)
+
+  analyzer_expect += sequences.analyzer_qav_seq(src, dst, command, args.user)
+
+  controller_state = state.get_controller_state(src, src_stream, dst, dst_stream, command)
+  controller_expect = sequences.expected_seq(controller_state)(controller_id)
+  return (talker_expect, listener_expect, controller_expect, analyzer_expect)
+
+def get_dual_port_nodes(nodes):
+  return [node for node in nodes if endpoints.get(node)['ports'] == 2]
+
+def action_enumerate(params_list):
+  entity_id = params_list[0]
+
+  descriptors = endpoints.get(entity_id)['descriptors']
+  controller_expect = sequences.controller_enumerate_seq(controller_id, descriptors)
+  controller_enumerate(controller_id, entity_id)
+
+  yield master.expect(controller_expect)
+
+def action_connect(params_list):
+  src = params_list[0]
+  src_stream = int(params_list[1])
+  dst = params_list[2]
+  dst_stream = int(params_list[3])
+
+  (talker_expect, listener_expect,
+   controller_expect, analyzer_expected) = get_expected(src, src_stream, dst, dst_stream, 'connect')
+
+  # Find the path between the src and dst and check whether there are any nodes between them
+  forward_enable = []
+  nodes = endpoints.get_path_endpoints(graph.find_path(src, dst))
+  for node in get_dual_port_nodes(nodes):
+    if graph.node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
+      forward_enable += sequences.expected_seq('stream_forward_enable')(args.user,
+        endpoints.get(node), endpoints.get(src))
+      forward_enable += sequences.expected_seq('port_shaper')(endpoints.get(node),
+          src, src_stream, dst, 'connect') 
+
+  # If there are any nodes in the chain then they must be seen to start forwarding before
+  # the listener can be expected to see the stream
+  if forward_enable:
+    listener_expect = [Sequence([AllOf(forward_enable), AllOf(listener_expect + analyzer_expected)])]
+  elif listener_expect or analyzer_expected:
+    listener_expect = [AllOf(listener_expect + analyzer_expected)]
+
+  # Expect not to see any enables from other nodes
+  not_forward_enable = []
+  temp_nodes = set(endpoints.get_all().keys()) - set(nodes)
+  for node in get_dual_port_nodes(temp_nodes):
+    not_forward_enable += sequences.expected_seq('stream_forward_enable')(args.user,
+      endpoints.get(node), endpoints.get(src))
+
+  if not_forward_enable:
+    not_forward_enable = [NoneOf(not_forward_enable)]
+
+  for node in get_dual_port_nodes(temp_nodes):
+    not_forward_enable += sequences.expected_seq('port_shaper')(endpoints.get(node),
+          src, src_stream, dst, 'connect') 
+
+  for y in controller_connect(controller_id, src, src_stream, dst, dst_stream):
+    yield y
+
+  yield master.expect(AllOf(talker_expect + listener_expect +
+        controller_expect + not_forward_enable))
+
+def action_disconnect(params_list):
+  src = params_list[0]
+  src_stream = int(params_list[1])
+  dst = params_list[2]
+  dst_stream = int(params_list[3])
+
+  (talker_expect, listener_expect,
+   controller_expect, analyzer_expected) = get_expected(src, src_stream, dst, dst_stream, 'disconnect')
+
+  # Find the path between the src and dst and check whether there are any nodes between them
+  forward_disable = []
+  nodes = endpoints.get_path_endpoints(graph.find_path(src, dst))
+  for node in get_dual_port_nodes(nodes):
+    if graph.node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
+      forward_disable += sequences.expected_seq('stream_forward_disable')(args.user,
+        endpoints.get(node), endpoints.get(src))
+      forward_disable += sequences.expected_seq('port_shaper')(endpoints.get(node),
+          src, src_stream, dst, 'disconnect') 
+
+  # If there are any nodes in the chain then the forward disabling is expected before the
+  # audio will be seen to be lost
+  if forward_disable:
+    listener_expect = [Sequence([AllOf(forward_disable), AllOf(listener_expect + analyzer_expected)])]
+  elif listener_expect or analyzer_expected:
+    listener_expect = [AllOf(listener_expect + analyzer_expected)]
+
+  # Expect not to see any disables from other nodes
+  not_forward_disable = []
+  temp_nodes = set(endpoints.get_all().keys()) - set(nodes)
+  for node in get_dual_port_nodes(temp_nodes):
+    not_forward_disable += sequences.expected_seq('stream_forward_disable')(args.user,
+      endpoints.get(node), endpoints.get(src))
+
+  if not_forward_disable:
+    not_forward_disable = [NoneOf(not_forward_disable)]
+
+  for node in get_dual_port_nodes(temp_nodes):
+    not_forward_disable += sequences.expected_seq('port_shaper')(endpoints.get(node),
+          src, src_stream, dst, 'disconnect') 
+
+  for y in controller_disconnect(controller_id, src, dst_stream, dst, dst_stream):
+    yield y
+
+  yield master.expect(AllOf(talker_expect + listener_expect +
+        controller_expect + not_forward_disable))
+
+def action_ping(params_list):
+  """ Ping a node with and check that it responds accordingly. This is used to test
+      connectivity.
+  """
+  node_name = params_list[0]
+  ep = endpoints.get(node_name)
+
+  node_expect = [Expected(ep['name'], "IDENTIFY Ping", 5)]
+  controller_expect = [Expected(controller_id, "Success", 5)]
+
+  master.sendLine(controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
+  master.sendLine(controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
+
+  yield master.expect(AllOf(node_expect + controller_expect))
+
+def action_link_downup(params_list):
+  """ Expect all connections which bridge the relay to be lost and restored if there
+      is a quick link down/up event. The first argument is the analyzer controlling
+      the relay. The second is the time to sleep before restoring the link.
+  """
+  analyzer_name = params_list[0]
+  sleep_time = int(params_list[1])
+  expected = []
+
+  # Expect all the connections which cross the relay to be lost
+  for c,n in state.active_connections.iteritems():
+    if n and analyzer_name in graph.find_path(c.talker.src, c.listener.dst):
+      expected += sequences.analyzer_listener_disconnect_seq(
+                      endpoints.get(c.talker.src), c.talker.src_stream,
+                      endpoints.get(c.listener.dst), c.listener.dst_stream)
+
+  # Send the command to open the relay '(r)elay (o)pen'
+  master.sendLine(analyzer_name, "r o")
+
+  if expected:
+    yield master.expect(AllOf(expected))
+  else:
+    yield master.expect(None)
+
+  # Perform a sleep as defined by the second argument
+  yield base.sleep(sleep_time)
+
+  expected = []
+
+  # Expect all the connections which cross the relay to be restored
+  for c,n in state.active_connections.iteritems():
+    if n and analyzer_name in graph.find_path(c.talker.src, c.listener.dst):
+      expected += sequences.analyzer_listener_connect_seq(
+                      endpoints.get(c.talker.src), c.talker.src_stream,
+                      endpoints.get(c.listener.dst), c.listener.dst_stream)
+
+  # Send the command to close the relay '(r)elay (c)lose'
+  master.sendLine(analyzer_name, "r c")
+
+  if expected:
+    yield master.expect(AllOf(expected))
+  else:
+    yield master.expect(None)
+
+def action_link_up(params_list):
+  analyzer_name = params_list[0]
+  # Send the command to close the relay '(r)elay (c)lose'
+  master.sendLine(analyzer_name, "r c")
+  # Don't expect anything to happen just from closing the relay
+  yield master.expect(None)
+
+def action_check_connections(params_list):
+  """ Check that the current state the controller reads from the endpoints matches
+      the state the test framework expects.
+  """
+  expected = []
+
+  # Expect all connections to be restored
+  for c,n in state.active_connections.iteritems():
+    if n:
+      expected += [Expected(controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
+                      endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)),
+                      c.talker.src_stream,
+                      endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)),
+                      c.listener.dst_stream), 10)]
+
+  master.sendLine(controller_id, "show connections")
+
+  if expected:
+    yield master.expect(AllOf(expected))
+  else:
+    yield master.expect(NoneOf([Expected(controller_id, "->", 5)]))
+
+def action_sleep(params_list):
+  """ Do nothing for the defined time.
+  """
+  yield base.sleep(int(params_list[0]))
+  yield master.expect(None)
+
+def action_continue(params_list):
+  """ Do nothing.
+  """
+  yield master.expect(None)
+
