@@ -37,7 +37,7 @@ def _get_loops(node, path_so_far, loops):
   """ Recursive function that looks through connections to search for loops.
       Any loop that is found is added to the loops list.
   """
-  for c,n in active_connections.iteritems():
+  for c,n in state.active_connections.iteritems():
     if not n or (node != c.talker.src):
       continue
 
@@ -56,7 +56,7 @@ def get_loops():
   """
   loops = []
 
-  for t,n in active_talkers.iteritems():
+  for t,n in state.active_talkers.iteritems():
     # If the endpoint is not active or already in a loop then ignore it
     if not n or any(t.src in loop for loop in loops):
       continue
@@ -115,7 +115,7 @@ def port_is_egress_in_path(connection, ep_name, port):
 def calculate_expected_bandwidth(ep, port):
   ep_name = ep['name']
   bandwidth = 0
-  for c,n in active_connections.iteritems():
+  for c,n in state.active_connections.iteritems():
     if not n:
       continue
 
@@ -144,7 +144,7 @@ def port_will_see_bandwidth_change(src, src_stream, ep_name, port, command):
   num_active_streams = 0
   
   # Look at all connections of this src stream
-  for c,n in active_connections.iteritems():
+  for c,n in state.active_connections.iteritems():
     if not n or c.talker.src != src or c.talker.src_stream != src_stream:
       continue
 
@@ -169,14 +169,14 @@ def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
       stream.
   """
   log_debug("node_will_see_stream_enable %s ?" % node)
-  if (connected(src, src_stream, dst, dst_stream) or
-      listener_active_count(dst, dst_stream)):
+  if (state.connected(src, src_stream, dst, dst_stream) or
+      state.listener_active_count(dst, dst_stream)):
     # Connection will have no effect
     log_debug("No, connection will not happen")
     return False
 
   # Look at all connections of this src stream
-  for c,n in active_connections.iteritems():
+  for c,n in state.active_connections.iteritems():
     if not n or c.talker.src != src or c.talker.src_stream != src_stream:
       continue
 
@@ -188,7 +188,7 @@ def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
     past_node = False
     for n in nodes:
       if past_node:
-        if connected(src, src_stream, n):
+        if state.connected(src, src_stream, n):
           log_debug("No forwarding, node %s is connected beyond %s?" % (n, node))
           return False
 
@@ -201,13 +201,13 @@ def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
   """ Determine whether a given node will see being disabled if it is turned off.
   """
   log_debug("node_will_see_stream_disable %s ?" % node)
-  if not connected(src, src_stream, dst, dst_stream):
+  if not state.connected(src, src_stream, dst, dst_stream):
     # Disconnection will have no effect
     log_debug("No, stream not connected")
     return False
 
   # Look at all connections of this src stream
-  for c,n in active_connections.iteritems():
+  for c,n in state.active_connections.iteritems():
     if not n:
       continue
 
@@ -226,7 +226,7 @@ def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
         continue
 
       if past_node:
-        if connected(src, src_stream, n):
+        if state.connected(src, src_stream, n):
           log_debug("No forwarding, node %s is connected beyond %s?" % (n, node))
           return False
 
