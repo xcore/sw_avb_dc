@@ -232,7 +232,7 @@ if __name__ == "__main__":
   args.master = master
 
   # Store the connectivity so that paths between nodes can be determined
-  graph.physical_connections = config['port_connections']
+  graph.set_connections(config['port_connections'])
 
   analyzers.start(rootDir, args, master, config['analyzers'])
   endpoints.start(rootDir, args, config['endpoints'], master)

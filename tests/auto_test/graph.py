@@ -11,6 +11,10 @@ import avb_1722
 """
 physical_connections = {}
 
+def set_connections(connections):
+  global physical_connections
+  physical_connections = connections
+
 def _find_path(start, end, path=[]):
   """ Recursive function to build up the path between the specified start and end point
   """
