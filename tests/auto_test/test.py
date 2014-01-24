@@ -137,21 +137,22 @@ def runTest(args):
   for y in check_endpoint_startup():
     yield y
 
-  for y in action_discover(args, []):
+  for y in action_discover(args, True, []):
     yield y
 
   if not getEntities():
     base.testError("no entities found", critical=True)
 
-  for (test_num, ts) in enumerate(test_steps):
+  for (test_num, test_step) in enumerate(test_steps):
     # Ensure that any remaining output of a previous test step is flushed
     for process in getActiveProcesses():
       master.clearExpectHistory(process)
 
-    print_title("Test %d - %s" % (test_num+1, ts))
-    action = ts.split(' ')
+    command = test_step.command
+    print_title("Test %d - %s" % (test_num+1, command))
+    action = command.split(' ')
     action_function = eval('action_%s' % action[0])
-    for y in action_function(args, action[1:]):
+    for y in action_function(args, test_step.do_checks, action[1:]):
       yield y
 
   # Allow everything time to settle (in case an error is being generated)

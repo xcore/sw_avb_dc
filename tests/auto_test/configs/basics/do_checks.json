@@ -1,0 +1,16 @@
+{
+  "sequence" : [
+    { "command" : "connect dc0 0 dc1 0", "do_checks" : false },
+    { "command" : "connect dc0 0 dc2 0", "do_checks" : false },
+    { "command" : "connect dc0 0 dc3 0", "do_checks" : false },
+    { "command" : "connect dc3 0 dc0 0", "do_checks" : false },
+
+    { "command" : "check_connections" },
+
+    { "command" : "disconnect dc0 0 dc1 0", "do_checks" : false },
+    { "command" : "disconnect dc0 0 dc2 0", "do_checks" : false },
+    { "command" : "disconnect dc0 0 dc3 0", "do_checks" : false },
+    { "command" : "disconnect dc3 0 dc0 0", "do_checks" : false },
+
+    { "command" : "check_connections" }
+]}
