@@ -2,7 +2,8 @@ import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
-from endpoints import get_all_endpoints
+import endpoints
+import state_rendering as rendering
 
 ''' Track the current connections in the topology.
      - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
@@ -14,6 +15,8 @@ active_talkers = {}
 active_listeners = {}
 talker_on_count = {}
 clock_source_master = {}
+
+open_relays = {}
 
 class Connection(object):
   def __init__(self, talker, listener):
@@ -92,7 +95,7 @@ def dump_state():
     if n:
       log_debug("Clock source master %s" % c)
 
-  draw_state(sorted(get_all_endpoints().keys()))
+  rendering.draw_state(sorted(endpoints.get_all().keys()))
 
 def connect(src, src_stream, dst, dst_stream):
   """ A connection will occur if the connection doesn't already exist
@@ -183,6 +186,8 @@ def get_talker_state(src, src_stream, dst, dst_stream, action):
         state = 'talker_all'
       else:
         state = 'talker_existing'
+  else:
+    base.testError("Unknown action '%s'" % action, critical=True)
 
   log_debug("get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
   return (state + '_' + action)
@@ -199,7 +204,7 @@ def get_listener_state(src, src_stream, dst, dst_stream, action):
     else:
       state = 'redundant'
   else:
-    testError("Unknown action '%s'" % action, True)
+    base.testError("Unknown action '%s'" % action, critical=True)
 
   log_debug("get_listener_state for %s %d: %s" % (dst, dst_stream, state))
   return (state + '_' + action)
@@ -217,53 +222,11 @@ def get_controller_state(src, src_stream, dst, dst_stream, action):
       state = 'redundant'
     else:
       state = 'success'
+  else:
+    base.testError("Unknown action '%s'" % action, critical=True)
 
   log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
   return ('controller_' + state + '_' + action)
-
-def get_loops_for_node(node, path_so_far, loops):
-  """ Recursive function that looks through connections to search for loops.
-      Any loop that is found is added to the loops list.
-  """
-  for c,n in active_connections.iteritems():
-    if not n or (node != c.talker.src):
-      continue
-
-    dest = c.listener.dst
-    if dest in path_so_far:
-      # Only add this as a loop if the destination is the same as the start node.
-      # Otherwise this is a path that has joined a loop.
-      if dest == path_so_far[0]:
-        loops += [path_so_far + [dest]]
-
-    else:
-      get_loops_for_node(dest, path_so_far + [dest], loops)
-
-def get_loops():
-  """ Find all the loops in the current set of connections.
-  """
-  loops = []
-
-  for t,n in active_talkers.iteritems():
-    # If the endpoint is not active or already in a loop then ignore it
-    if not n or any(t.src in loop for loop in loops):
-      continue
-
-    get_loops_for_node(t.src, [t.src], loops)
-
-  log_debug("get_loops got %s" % loops)
-  return loops
-
-def is_in_loop(node):
-  in_loop = False
-  loops = get_loops()
-  for loop in loops:
-    if node in loop:
-      in_loop = True
-      break
-
-  log_debug("is_in_loop %s = %d" % (node, in_loop))
-  return in_loop
 
 def is_clock_source_master(node):
   return clock_source_master.get(node, 0)
@@ -274,257 +237,12 @@ def set_clock_source_master(node):
 def set_clock_source_slave(node):
   clock_source_master[node] = 0
 
-def find_path(graph, start, end, path=[]):
-  """ Build up the path between the specified start and end point
-  """
-  path = path + [start]
-  if start == end:
-    return path
-  if not graph.has_key(start):
-    return None
-  for node in graph[start]:
-    if node not in path:
-      newpath = find_path(graph, node, end, path)
-      if newpath:
-        return newpath
-  return None
+def set_relay_open(node):
+  open_relays[node] = 1
 
-def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node, connections):
-  """ Determine whether a given node will see the stream between src/dst as a new
-      stream. Returns True if it will be a new stream, False if it is an existing
-      stream.
-  """
-  log_debug("node_will_see_stream_enable %s ?" % node)
-  if (connected(src, src_stream, dst, dst_stream) or
-      listener_active_count(dst, dst_stream)):
-    # Connection will have no effect
-    log_debug("No, connection will not happen")
-    return False
+def set_relay_closed(node):
+  open_relays[node] = 0
 
-  # Look at all connections of this src stream
-  for c,n in active_connections.iteritems():
-    if not n:
-      continue
-
-    if c.talker.src != src or c.talker.src_stream != src_stream:
-      continue
-
-    nodes = find_path(connections, src, c.listener.dst)
-    log_debug("What about path %s?" % nodes)
-      
-    # Look for all nodes past this one in the path. If one of them is connected to
-    # this stream then this node won't see enable, otherwise it should expect to
-    past_node = False
-    for n in nodes:
-      if past_node:
-        if connected(src, src_stream, n):
-          log_debug("No forwarding, node %s is connected beyond %s?" % (n, node))
-          return False
-
-      elif n == node:
-        past_node = True
-
-  return True
-
-def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node, connections):
-  """ Determine whether a given node will see being disabled if it is turned off.
-  """
-  log_debug("node_will_see_stream_disable %s ?" % node)
-  if not connected(src, src_stream, dst, dst_stream):
-    # Disconnection will have no effect
-    log_debug("No, stream not connected")
-    return False
-
-  # Look at all connections of this src stream
-  for c,n in active_connections.iteritems():
-    if not n:
-      continue
-
-    if c.talker.src != src or c.talker.src_stream != src_stream:
-      continue
-
-    nodes = find_path(connections, src, c.listener.dst)
-    log_debug("What about path %s?" % nodes)
-      
-    # Look for all nodes past this one in the path. If one of them is connected to
-    # this stream then this node won't see disable, otherwise it should expect to
-    past_node = False
-    for n in nodes:
-      if n == dst:
-        # Ignore the current connection
-        continue
-
-      if past_node:
-        if connected(src, src_stream, n):
-          log_debug("No forwarding, node %s is connected beyond %s?" % (n, node))
-          return False
-
-      elif n == node:
-        past_node = True
-
-  return True
-
-def connection_line(ep_names, ep_num, active_talkers):
-  line = ""
-  connect = "-"
-  for i,name in enumerate(ep_names):
-    if i == ep_num:
-      line += "-+"
-      connect = " "
-    elif name in active_talkers:
-      line += "%s|" % connect
-    else:
-      line += connect * 2
-  return line
-
-def non_connection_line(ep_names, active_talkers):
-  line = ""
-  for i,name in enumerate(ep_names):
-    if name in active_talkers:
-      line += " |"
-    else:
-      line += "  "
-  return line
-
-def get_listeners_for_talker(talker):
-  listeners = []
-  for c,n in active_connections.iteritems():
-    if n and c.talker.src == talker:
-      listeners += [c.listener.dst]
-  return listeners
-
-def get_talker_for_listener(listener):
-  for c,n in active_connections.iteritems():
-    if n and c.listener.dst == listener:
-      return c.talker.src
-  return None
-
-def get_max_listener_index(ep_names, talker):
-  max_listener_index = 0
-  for listener in get_listeners_for_talker(talker):
-    listener_index = ep_names.index(listener)
-    if listener_index > max_listener_index:
-      max_listener_index = listener_index
-
-  return max_listener_index
-
-def get_header(ep_name):
-  if is_clock_source_master(ep_name):
-    return " *======* "
-  else:
-    return " +======+ "
-
-def draw_state(ep_names):
-  """ Draw a graph of the connections.
-      Creates the endpoints down the left.
-      Creates connections at a depth to right which depends on the talker index.
-  """
-  ep_offset = 0
-  ep_num = 0
-  active_talkers = set()
-  num_endpoints = len(ep_names)
-  lines = []
-
-  # The endpoints are rendered over 5 lines (start, out, name, in, end)
-  # and then there is a 1-line gap between.
-  num_lines = num_endpoints * 5 + num_endpoints - 1
-  for line_num in range(0, num_lines):
-    ep_name = ep_names[ep_num]
-    line = ""
-    if ep_offset == 0 or ep_offset == 4:
-      line += get_header(ep_name)
-      line += "  " + non_connection_line(ep_names, active_talkers)
-
-    elif ep_offset == 1:
-      line += " |      | "
-      if talker_active_count(ep_name, 0):
-        max_listener_index = get_max_listener_index(ep_names, ep_name)
-
-        if max_listener_index > ep_num:
-          active_talkers |= set([ep_name])
-        else:
-          if ep_name in active_talkers:
-            active_talkers.remove(ep_name)
-        line += "--"
-        line += connection_line(ep_names, ep_num, active_talkers)
-      else:
-        line += "  " + non_connection_line(ep_names, active_talkers)
-
-    elif ep_offset == 2:
-      line += " | %-4s | " % ep_name
-      line += "  " + non_connection_line(ep_names, active_talkers)
-
-    elif ep_offset == 3:
-      line += " |      | "
-      if listener_active_count(ep_name, 0):
-        talker = get_talker_for_listener(ep_name)
-        talker_index = ep_names.index(talker)
-        if talker_index > ep_num:
-          active_talkers |= set([talker])
-        else:
-          max_listener_index = get_max_listener_index(ep_names, talker)
-          if max_listener_index <= ep_num and talker in active_talkers:
-            active_talkers.remove(talker)
-
-        line += "<-"
-        line += connection_line(ep_names, talker_index, active_talkers)
-      else:
-        line += "  " + non_connection_line(ep_names, active_talkers)
-
-    else:
-      line += "          "
-      line += "  " + non_connection_line(ep_names, active_talkers)
-      ep_num += 1
-      ep_offset = -1
-
-    ep_offset += 1
-    lines += [line]
-
-  for line in lines:
-    log_debug(line)
-
-
-if __name__ == "__main__":
-  # Test cases for the loop detection and state drawing
-  xmos_logging.configure_logging(level_console='INFO', level_file='DEBUG')
-
-  ep_names = [ "dc0", "dc1", "dc2", "dc3" ]
-  connect("dc0", 0, "dc1", 0)
-  connect("dc1", 0, "dc0", 0)
-  print get_loops()
-  draw_state(ep_names)
-
-  disconnect("dc1", 0, "dc0", 0)
-  connect("dc1", 0, "dc2", 0)
-  connect("dc2", 0, "dc0", 0)
-  print get_loops()
-  draw_state(ep_names)
-
-  disconnect("dc2", 0, "dc0", 0)
-  disconnect("dc1", 0, "dc2", 0)
-  print get_loops()
-  draw_state(ep_names)
-
-  connect("dc3", 0, "dc0", 0)
-  connect("dc0", 0, "dc3", 0)
-  print get_loops()
-  draw_state(ep_names)
-
-  set_clock_source_master("dc0")
-
-  connect("dc1", 0, "dc2", 0)
-  print get_loops()
-  draw_state(ep_names)
-
-  disconnect("dc1", 0, "dc2", 0)
-  disconnect("dc3", 0, "dc0", 0)
-  disconnect("dc0", 0, "dc3", 0)
-
-  connect("dc3", 0, "dc2", 0)
-  connect("dc2", 0, "dc3", 0)
-  connect("dc0", 0, "dc1", 0)
-  connect("dc1", 0, "dc0", 0)
-  set_clock_source_master("dc3")
-  print get_loops()
-  draw_state(ep_names)
+def is_relay_open(node):
+  return open_relays.get(node, 0)
 

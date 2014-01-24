@@ -9,10 +9,13 @@ from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
 all_analyzers = {}
 
-def get_all_analyzers():
+def get_all():
   return all_analyzers
 
-def analyzer_port(name):
+def get(name):
+  return all_analyzers.get(name, None)
+
+def get_port(name):
   return all_analyzers[name]['port']
 
 def siggen_frequency(talker_ep, i):
@@ -52,7 +55,7 @@ def start_analyzer(rootDir, master, name, adapter_id, port, analyzer_type, args)
   reactor.spawnProcess(analyzer, analyzer_bin, [analyzer_bin, '-p', '%d' % port],
       env=os.environ, path=args.logdir)
 
-def start_analyzers(rootDir, args, master, analyzers):
+def start(rootDir, args, master, analyzers):
   overrides = {}
   for override in args.types:
     if '=' not in override:

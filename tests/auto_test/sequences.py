@@ -2,37 +2,37 @@ import re
 
 import xmos.test.base as base
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
+
 import analyzers
 import endpoints
 import state
+import graph
 
 def stream_id_from_guid(user, ep, num):
     stream_id = endpoints.get_avb_id(user, ep).replace("fffe","") + "000" + str(num)
     return stream_id.upper()
 
 def expected_seq(name):
-    ''' Function to convert from a sequence name to the actual sequence
-    '''
+    """ Function to convert from a sequence name to the actual sequence
+    """
     return eval(name + '_seq')
 
 def controller_enumerate_seq(controller_id, descriptors):
-    ''' Build an enumerated sequence for an entity by reading from a topology file
-    '''
-
-    time_out = 10
+    """ Build an enumerated sequence for an entity by reading from a topology file
+    """
     expected_seq = []
 
     for dtor in sorted(descriptors.keys()):
         temp_string = "AVB 1722.1 {0} ".format(re.sub('\d*_', '', dtor, 1))
-        expected_seq.append(Expected(controller_id, temp_string, time_out))
+        expected_seq.append(Expected(controller_id, temp_string, 10))
         for dtor_name in descriptors[str(dtor)].keys():
             temp_string = "object_name\s*=\s*\'{0}\'".format(dtor_name)
-            expected_seq.append(Expected(controller_id, temp_string, time_out))
+            expected_seq.append(Expected(controller_id, temp_string, 10))
             for element in descriptors[str(dtor)][dtor_name]:
                 temp_string = "{0}\s*=\s*{1}".format(element['item'], element['value'])
-                expected_seq.append(Expected(controller_id, temp_string, time_out))
+                expected_seq.append(Expected(controller_id, temp_string, 10))
 
-    return (Sequence(expected_seq))
+    return Sequence(expected_seq)
 
 def controller_success_connect_seq(controller_id):
     return [Expected(controller_id, "Success", 10)]
@@ -96,18 +96,18 @@ def listener_disconnect_seq(ep, stream_num):
     return listener_disconnection
 
 def redundant_connect_seq(ep, stream_num):
-    ''' This sequence may be due to redundant connect from a random test sequence.
+    """ This sequence may be due to redundant connect from a random test sequence.
         Just ensuring that lock is not lost.
-    '''
+    """
     empty_seq = [
             NoneOf([Expected(ep['name'], "Media output \d+ lost lock", 2)])
         ]
     return empty_seq
 
 def redundant_disconnect_seq(ep, stream_num):
-    ''' This sequence may be due to redundant disconnect from a random test sequence.
+    """ This sequence may be due to redundant disconnect from a random test sequence.
         Nothing to test.
-    '''
+    """
     return []
 
 def stream_forward_enable_seq(user, forward_ep, talker_ep):
@@ -122,14 +122,38 @@ def stream_forward_disable_seq(user, forward_ep, talker_ep):
         ]
     return forward_stream
 
-def hook_register_error(args):
-  (process_name, patterns) = args
+def port_shaper_seq(forward_ep, src, src_stream, dst, command):
+  forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
+  action = 'Increasing' if command == 'connect' else 'Decreasing'
+
+  if forward_port is not None:
+    expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
+        forward_ep['name'], forward_port, command)
+  else:
+    expect_change = False
+
+  if expect_change:
+    seq = [
+            Expected(forward_ep['name'], "%s port %d shaper bandwidth" % (action, forward_port),
+                timeout_time=10,
+                completionFn=graph.check_forward_bandwidth,
+                completionArgs=(forward_ep, forward_port))
+          ]
+  else:
+    seq = [
+            NoneOf([Expected(forward_ep['name'], "%s port \d+ shaper bandwidth" % action, 10)])
+          ]
+
+  return seq
+
+def hook_register_error(expected):
+  (process_name, patterns) = expected.completionArgs
   process = getActiveProcesses()[process_name]
   for pattern in patterns:
     process.registerErrorPattern(pattern)
 
-def hook_unregister_error(args):
-  (process_name, patterns) = args
+def hook_unregister_error(expected):
+  (process_name, patterns) = expected.completionArgs
   process = getActiveProcesses()[process_name]
   for pattern in patterns:
     process.unregisterErrorPattern(pattern)
@@ -159,19 +183,19 @@ def analyzer_listener_connect_seq(talker_ep, talker_stream_num, listener_ep, lis
 def analyzer_redundant_connect_seq(talker_ep, talker_stream_num, listener_ep, listener_stream_num):
   return []
 
-def analyzer_qav_seq(src, dst, command, connections, user):
+def analyzer_qav_seq(src, dst, command, user):
   """ Get the expected sequence for any QAV analyzers active.
   """
   analyzer_expect = []
 
-  for analyzer_name,analyzer in analyzers.get_all_analyzers().iteritems():
+  for analyzer_name,analyzer in analyzers.get_all().iteritems():
     if analyzer['type'] != 'qav':
       continue
 
     # If the analyzer is a QAV analyzer then it will detect the stream through
     # the packets being forwarded through it
-    if analyzer_name in state.find_path(connections, src, dst):
-      guid_string = endpoints.guid_in_ascii(user, endpoints.entity_by_name(src))
+    if analyzer_name in graph.find_path(src, dst):
+      guid_string = endpoints.guid_in_ascii(user, endpoints.get(src))
       stream_string = endpoints.stream_from_guid(guid_string)
       if command == 'connect':
         action_string = "Adding"
