@@ -273,6 +273,26 @@ def action_link_up(args, do_checks, params_list):
 def action_link_down(args, do_checks, params_list):
   analyzer_name = params_list[0]
 
+  expected = []
+  affected_talkers = set()
+  # Expect all the connections which cross the relay to be lost
+  for c,n in state.active_connections.iteritems():
+    if not n:
+      continue
+
+    path = graph.find_path(c.talker.src, c.listener.dst)
+    if path and analyzer_name in path:
+      affected_talkers |= set([c.talker])
+      expected += [Expected(listener.dst, "ADP: Removing entity who timed out -> GUID", 30)]
+      expected += sequences.analyzer_listener_disconnect_seq(
+                      endpoints.get(c.talker.src), c.talker.src_stream,
+                      endpoints.get(c.listener.dst), c.listener.dst_stream)
+      state.disconnect(c.talker.src, c.talker.src_stream, c.listener.dst, c.listener.dst_stream)
+
+  for talker in affected_talkers:
+    if not state.talker_active_count(talker.src, talker.src_stream):
+      expected += [Expected(talker.src, "Talker stream #%d off" % talker.src_stream, 30)]
+
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r o")
   state.set_relay_open(analyzer_name)
