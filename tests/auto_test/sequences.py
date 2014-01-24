@@ -17,11 +17,16 @@ def expected_seq(name):
     """
     return eval(name + '_seq')
 
-def controller_enumerate_seq(controller_id, descriptors):
+def controller_enumerate_seq(controller_id, endpoint_name):
     """ Build an enumerated sequence for an entity by reading from a topology file
     """
     expected_seq = []
 
+    visible_endpoints = graph.get_endpoints_connected_to(controller_id)
+    if endpoint_name not in visible_endpoints:
+      return Expected(controller_id, "No descriptors found", 10)
+
+    descriptors = endpoints.get(endpoint_name)['descriptors']
     for dtor in sorted(descriptors.keys()):
         temp_string = "AVB 1722.1 {0} ".format(re.sub('\d*_', '', dtor, 1))
         expected_seq.append(Expected(controller_id, temp_string, 10))
@@ -40,11 +45,18 @@ def controller_success_connect_seq(controller_id):
 def controller_listener_exclusive_connect_seq(controller_id):
     return [Expected(controller_id, "Failed with status LISTENER_EXCLUSIVE", 10)]
 
+def controller_timeout_connect_seq(controller_id):
+    return [Expected(controller_id, "Timed out", 10)]
+
 def controller_success_disconnect_seq(controller_id):
     return [Expected(controller_id, "Success", 10)]
 
 def controller_redundant_disconnect_seq(controller_id):
     return []
+
+def controller_timeout_disconnect_seq(controller_id):
+    return [Expected(controller_id, "Timed out", 10)]
+
 
 def talker_new_connect_seq(ep, stream_num):
   """ Only on the first time the talker is turned on must the 'ready' be seen.
@@ -63,19 +75,19 @@ def talker_existing_connect_seq(ep, stream_num):
         ]
     return talker_connection
 
-def talker_all_disconnect_seq(ep, stream_num):
+def talker_all_disconnect_seq(ep, stream_num, timeout=10):
     talker_disconnection = [
-            Sequence([Expected(ep['name'], "DISCONNECTING Talker stream #%d" % stream_num, 10),
-                      Expected(ep['name'], "Talker stream #%d off" % stream_num, 10)])
+            Sequence([Expected(ep['name'], "DISCONNECTING Talker stream #%d" % stream_num, timeout),
+                      Expected(ep['name'], "Talker stream #%d off" % stream_num, timeout)])
         ]
     return talker_disconnection
 
-def talker_existing_disconnect_seq(ep, stream_num):
+def talker_existing_disconnect_seq(ep, stream_num, timeout=10):
     talker_disconnection = [
-            Sequence([Expected(ep['name'], "DISCONNECTING Talker stream #%d" % stream_num, 10),
+            Sequence([Expected(ep['name'], "DISCONNECTING Talker stream #%d" % stream_num, timeout),
                     # Ensure that we don't accidentally trigger the Talker to turn off the stream:
-                      NoneOf([Expected(ep['name'], "Talker stream #%d ready" % stream_num, 10),
-                              Expected(ep['name'], "Talker stream #%d off" % stream_num, 10)])
+                      NoneOf([Expected(ep['name'], "Talker stream #%d ready" % stream_num, timeout),
+                              Expected(ep['name'], "Talker stream #%d off" % stream_num, timeout)])
                     ])
         ]
     return talker_disconnection
@@ -89,9 +101,9 @@ def listener_connect_seq(ep, stream_num):
         ]
     return listener_connection
 
-def listener_disconnect_seq(ep, stream_num):
+def listener_disconnect_seq(ep, stream_num, timeout=10):
     listener_disconnection = [
-            Expected(ep['name'], "DISCONNECTING Listener sink #%d" % stream_num, 10)
+            Expected(ep['name'], "DISCONNECTING Listener sink #%d" % stream_num, timeout)
         ]
     return listener_disconnection
 
@@ -122,29 +134,45 @@ def stream_forward_disable_seq(user, forward_ep, talker_ep):
         ]
     return forward_stream
 
-def port_shaper_seq(forward_ep, src, src_stream, dst, command):
-  forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
-  action = 'Increasing' if command == 'connect' else 'Decreasing'
-
-  if forward_port is not None:
-    expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
-        forward_ep['name'], forward_port, command)
-  else:
-    expect_change = False
-
-  if expect_change:
-    seq = [
-            Expected(forward_ep['name'], "%s port %d shaper bandwidth" % (action, forward_port),
+def port_shaper_change_seq(ep, port, action):
+    return [ Expected(ep['name'], "%s port %d shaper bandwidth" % (action, port),
                 timeout_time=10,
                 completionFn=graph.check_forward_bandwidth,
-                completionArgs=(forward_ep, forward_port))
-          ]
-  else:
-    seq = [
-            NoneOf([Expected(forward_ep['name'], "%s port \d+ shaper bandwidth" % action, 10)])
-          ]
+                completionArgs=(ep, port)) ]
 
-  return seq
+def port_shaper_no_change_seq(ep):
+    return [NoneOf([Expected(ep['name'], "port \d+ shaper bandwidth", 10)])]
+
+def port_shaper_connect_seq(forward_ep, src, src_stream, dst, dst_stream):
+  expect_change = False
+
+  if not state.connected(src, src_stream, dst, dst_stream) and \
+      not state.listener_active_count(dst, dst_stream):
+    forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
+
+    if forward_port is not None:
+      expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
+          forward_ep['name'], forward_port, 'connect')
+
+  if expect_change:
+    return port_shaper_change_seq(forward_ep, forward_port, 'Increasing')
+  else:
+    return port_shaper_no_change_seq(forward_ep)
+
+def port_shaper_disconnect_seq(forward_ep, src, src_stream, dst, dst_stream):
+  expect_change = False
+
+  if state.connected(src, src_stream, dst, dst_stream):
+    forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
+
+    if forward_port is not None:
+      expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
+          forward_ep['name'], forward_port, 'disconnect')
+
+  if expect_change:
+    return port_shaper_change_seq(forward_ep, forward_port, 'Decreasing')
+  else:
+    return port_shaper_no_change_seq(forward_ep)
 
 def hook_register_error(expected):
   (process_name, patterns) = expected.completionArgs

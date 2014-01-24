@@ -109,7 +109,7 @@ def port_is_egress_in_path(connection, ep_name, port):
   """
   path = find_path(connection.talker.src, connection.listener.dst)
   # As long as the endpoint is in the path before the end
-  if ep_name in path and ep_name != connection.listener.dst:
+  if path and ep_name in path and ep_name != connection.listener.dst:
     # Determine wether this port is the egress port for the path found
     # that means the node after the endpoint. 
     index = path.index(ep_name)

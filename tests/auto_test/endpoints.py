@@ -26,9 +26,8 @@ def get_path_endpoints(path):
   """ Given a path, find any endpoints between the start and end endpoints. This
       means excluding nodes which are the ports.
   """
-
-  # There should always be more than 2 elements on the path since there are the node + the ports.
-  assert len(path) > 2
+  if path is None or len(path) < 2:
+    return []
 
   nodes = []
   for node in path[1:-1]:

@@ -33,7 +33,7 @@
     { "command" : "disconnect dc3 0 dc1 0", "weight" : 40 },
     { "command" : "disconnect dc3 0 dc2 0", "weight" : 40 },
 
-    { "command" : "link_down analyzer0 1", "weight" : 80 },
+    { "command" : "link_downup analyzer0 1", "weight" : 80 },
 
     { "command" : "check_connections", "weight" : 80 },
 
