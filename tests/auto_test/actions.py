@@ -124,8 +124,8 @@ def action_connect(args, do_checks, params_list):
     if graph.node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
       forward_enable += sequences.expected_seq('stream_forward_enable')(args.user,
         endpoints.get(node), endpoints.get(src))
-      forward_enable += sequences.expected_seq('port_shaper')(endpoints.get(node),
-          src, src_stream, dst, 'connect') 
+      forward_enable += sequences.expected_seq('port_shaper_connect')(endpoints.get(node),
+          src, src_stream, dst, dst_stream)
 
   # If there are any nodes in the chain then they must be seen to start forwarding before
   # the listener can be expected to see the stream
@@ -145,8 +145,8 @@ def action_connect(args, do_checks, params_list):
     not_forward_enable = [NoneOf(not_forward_enable)]
 
   for node in get_dual_port_nodes(temp_nodes):
-    not_forward_enable += sequences.expected_seq('port_shaper')(endpoints.get(node),
-          src, src_stream, dst, 'connect') 
+    not_forward_enable += sequences.expected_seq('port_shaper_connect')(endpoints.get(node),
+          src, src_stream, dst, dst_stream)
 
   for y in controller_connect(args, do_checks, src, src_stream, dst, dst_stream):
     yield y
@@ -171,8 +171,8 @@ def action_disconnect(args, do_checks, params_list):
     if graph.node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
       forward_disable += sequences.expected_seq('stream_forward_disable')(args.user,
         endpoints.get(node), endpoints.get(src))
-      forward_disable += sequences.expected_seq('port_shaper')(endpoints.get(node),
-          src, src_stream, dst, 'disconnect') 
+      forward_disable += sequences.expected_seq('port_shaper_disconnect')(endpoints.get(node),
+          src, src_stream, dst, dst_stream)
 
   # If there are any nodes in the chain then the forward disabling is expected before the
   # audio will be seen to be lost
@@ -192,8 +192,8 @@ def action_disconnect(args, do_checks, params_list):
     not_forward_disable = [NoneOf(not_forward_disable)]
 
   for node in get_dual_port_nodes(temp_nodes):
-    not_forward_disable += sequences.expected_seq('port_shaper')(endpoints.get(node),
-          src, src_stream, dst, 'disconnect') 
+    not_forward_disable += sequences.expected_seq('port_shaper_disconnect')(endpoints.get(node),
+          src, src_stream, dst, dst_stream)
 
   for y in controller_disconnect(args, do_checks, src, dst_stream, dst, dst_stream):
     yield y
@@ -267,8 +267,8 @@ def action_link_up(args, do_checks, params_list):
   args.master.sendLine(analyzer_name, "r c")
   state.set_relay_closed(analyzer_name)
 
-  # Don't expect anything to happen just from closing the relay
-  yield args.master.expect(None)
+  # Always allow time for the relay to actually be opened
+  yield base.sleep(0.1)
 
 def action_link_down(args, do_checks, params_list):
   analyzer_name = params_list[0]

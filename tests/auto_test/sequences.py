@@ -134,29 +134,45 @@ def stream_forward_disable_seq(user, forward_ep, talker_ep):
         ]
     return forward_stream
 
-def port_shaper_seq(forward_ep, src, src_stream, dst, command):
-  forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
-  action = 'Increasing' if command == 'connect' else 'Decreasing'
-
-  if forward_port is not None:
-    expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
-        forward_ep['name'], forward_port, command)
-  else:
-    expect_change = False
-
-  if expect_change:
-    seq = [
-            Expected(forward_ep['name'], "%s port %d shaper bandwidth" % (action, forward_port),
+def port_shaper_change_seq(ep, port, action):
+    return [ Expected(ep['name'], "%s port %d shaper bandwidth" % (action, port),
                 timeout_time=10,
                 completionFn=graph.check_forward_bandwidth,
-                completionArgs=(forward_ep, forward_port))
-          ]
-  else:
-    seq = [
-            NoneOf([Expected(forward_ep['name'], "%s port \d+ shaper bandwidth" % action, 10)])
-          ]
+                completionArgs=(ep, port)) ]
 
-  return seq
+def port_shaper_no_change_seq(ep):
+    return [NoneOf([Expected(ep['name'], "port \d+ shaper bandwidth", 10)])]
+
+def port_shaper_connect_seq(forward_ep, src, src_stream, dst, dst_stream):
+  expect_change = False
+
+  if not state.connected(src, src_stream, dst, dst_stream) and \
+      not state.listener_active_count(dst, dst_stream):
+    forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
+
+    if forward_port is not None:
+      expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
+          forward_ep['name'], forward_port, 'connect')
+
+  if expect_change:
+    return port_shaper_change_seq(forward_ep, forward_port, 'Increasing')
+  else:
+    return port_shaper_no_change_seq(forward_ep)
+
+def port_shaper_disconnect_seq(forward_ep, src, src_stream, dst, dst_stream):
+  expect_change = False
+
+  if state.connected(src, src_stream, dst, dst_stream):
+    forward_port = graph.get_forward_port(src, dst, forward_ep['name'])
+
+    if forward_port is not None:
+      expect_change = graph.port_will_see_bandwidth_change(src, src_stream,
+          forward_ep['name'], forward_port, 'disconnect')
+
+  if expect_change:
+    return port_shaper_change_seq(forward_ep, forward_port, 'Decreasing')
+  else:
+    return port_shaper_no_change_seq(forward_ep)
 
 def hook_register_error(expected):
   (process_name, patterns) = expected.completionArgs
