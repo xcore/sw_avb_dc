@@ -26,7 +26,7 @@ def controller_enumerate_seq(controller_id, endpoint_name):
     if endpoint_name not in visible_endpoints:
       return Expected(controller_id, "No descriptors found", 10)
 
-    descriptors = endpoints.get(entity_id)['descriptors']
+    descriptors = endpoints.get(endpoint_name)['descriptors']
     for dtor in sorted(descriptors.keys()):
         temp_string = "AVB 1722.1 {0} ".format(re.sub('\d*_', '', dtor, 1))
         expected_seq.append(Expected(controller_id, temp_string, 10))
