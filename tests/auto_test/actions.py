@@ -83,7 +83,8 @@ def get_expected(args, src, src_stream, dst, dst_stream, command):
 
   analyzer_expect += sequences.analyzer_qav_seq(src, dst, command, args.user)
 
-  controller_state = state.get_controller_state(src, src_stream, dst, dst_stream, command)
+  controller_state = state.get_controller_state(args.controller_id,
+      src, src_stream, dst, dst_stream, command)
   controller_expect = sequences.expected_seq(controller_state)(args.controller_id)
   return (talker_expect, listener_expect, controller_expect, analyzer_expect)
 
@@ -101,9 +102,8 @@ def action_discover(args, do_checks, params_list):
 def action_enumerate(args, do_checks, params_list):
   endpoint_name = params_list[0]
 
-  descriptors = endpoints.get(entity_id)['descriptors']
-  controller_expect = sequences.controller_enumerate_seq(args.controller_id, descriptors)
-  controller_enumerate(args, entity_id)
+  controller_expect = sequences.controller_enumerate_seq(args.controller_id, endpoint_name)
+  controller_enumerate(args, endpoint_name)
 
   if do_checks:
     yield args.master.expect(controller_expect)
@@ -247,6 +247,7 @@ def action_link_downup(args, do_checks, params_list):
   expected = []
 
   # Expect all the connections which cross the relay to be restored
+  state.set_relay_closed(analyzer_name)
   for c,n in state.active_connections.iteritems():
     if n and analyzer_name in graph.find_path(c.talker.src, c.listener.dst):
       expected += sequences.analyzer_listener_connect_seq(
@@ -255,7 +256,6 @@ def action_link_downup(args, do_checks, params_list):
 
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r c")
-  state.set_relay_closed(analyzer_name)
 
   if do_checks and expected:
     yield args.master.expect(AllOf(expected))

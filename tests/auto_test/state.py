@@ -4,6 +4,7 @@ from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
 import endpoints
 import state_rendering as rendering
+import graph
 
 ''' Track the current connections in the topology.
      - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
@@ -99,11 +100,16 @@ def dump_state():
 
 def connect(src, src_stream, dst, dst_stream):
   """ A connection will occur if the connection doesn't already exist
-      and the listener is not in use.
+      and the listener is not in use. There must also be a valid path
+      between the two endpoints.
   """
   if (connected(src, src_stream, dst, dst_stream) or
       listener_active_count(dst, dst_stream)):
     return
+
+  path = graph.find_path(src, dst)
+  if not path:
+    return;
 
   talker = Talker(src, src_stream)
   listener = Listener(dst, dst_stream)
@@ -168,7 +174,10 @@ def listener_active_count(dst, dst_stream):
   return active_listeners.get(listener, 0)
 
 def get_talker_state(src, src_stream, dst, dst_stream, action):
-  if action == 'connect':
+  if graph.find_path(src, dst) is None:
+    state = 'redundant'
+
+  elif action == 'connect':
     if connected(src, src_stream, dst, dst_stream):
       state = 'redundant'
     else:
@@ -178,6 +187,7 @@ def get_talker_state(src, src_stream, dst, dst_stream, action):
         state = 'talker_existing'
       else:
         state = 'talker_new'
+
   elif action == 'disconnect':
     if not connected(src, src_stream, dst, dst_stream):
       state = 'redundant'
@@ -186,6 +196,7 @@ def get_talker_state(src, src_stream, dst, dst_stream, action):
         state = 'talker_all'
       else:
         state = 'talker_existing'
+
   else:
     base.testError("Unknown action '%s'" % action, critical=True)
 
@@ -193,35 +204,46 @@ def get_talker_state(src, src_stream, dst, dst_stream, action):
   return (state + '_' + action)
 
 def get_listener_state(src, src_stream, dst, dst_stream, action):
-  if action == 'connect':
+  if graph.find_path(src, dst) is None:
+    state = 'redundant'
+
+  elif action == 'connect':
     if listener_active_count(dst, dst_stream):
       state = 'redundant'
     else:
       state = 'listener'
+
   elif action == 'disconnect':
     if connected(src, src_stream, dst, dst_stream):
       state = 'listener'
     else:
       state = 'redundant'
+
   else:
     base.testError("Unknown action '%s'" % action, critical=True)
 
   log_debug("get_listener_state for %s %d: %s" % (dst, dst_stream, state))
   return (state + '_' + action)
 
-def get_controller_state(src, src_stream, dst, dst_stream, action):
-  if action == 'connect':
+def get_controller_state(controller_id, src, src_stream, dst, dst_stream, action):
+  controllable_endpoints = graph.get_endpoints_connected_to(controller_id)
+  if src not in controllable_endpoints or dst not in controllable_endpoints:
+    state = 'timeout'
+
+  elif action == 'connect':
     if connected(src, src_stream, dst, dst_stream):
       state = 'success'
     elif listener_active_count(dst, dst_stream):
       state = 'listener_exclusive'
     else:
       state = 'success'
+
   elif action == 'disconnect':
     if not connected(src, src_stream, dst, dst_stream):
       state = 'redundant'
     else:
       state = 'success'
+
   else:
     base.testError("Unknown action '%s'" % action, critical=True)
 
