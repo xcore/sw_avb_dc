@@ -12,13 +12,18 @@ import avb_1722
 physical_connections = {}
 
 def _find_path(start, end, path=[]):
-  """ Build up the path between the specified start and end point
+  """ Recursive function to build up the path between the specified start and end point
   """
   path = path + [start]
   if start == end:
     return path
+
   if not physical_connections.has_key(start):
     return None
+
+  if state.is_relay_open(start):
+    return None
+
   for node in physical_connections[start]:
     if node not in path:
       newpath = _find_path(node, end, path)
@@ -234,4 +239,12 @@ def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
         past_node = True
 
   return True
+
+def get_endpoints_connected_to(node):
+  connected = set()
+  for endpoint in endpoints.get_all():
+    if find_path(node, endpoint):
+      connected |= set([endpoint])
+  log_debug("get_endpoints_connected_to %s: %s" % (node, connected))
+  return connected
 

@@ -16,6 +16,8 @@ active_listeners = {}
 talker_on_count = {}
 clock_source_master = {}
 
+open_relays = {}
+
 class Connection(object):
   def __init__(self, talker, listener):
     self.talker = talker
@@ -234,4 +236,13 @@ def set_clock_source_master(node):
 
 def set_clock_source_slave(node):
   clock_source_master[node] = 0
+
+def set_relay_open(node):
+  open_relays[node] = 1
+
+def set_relay_closed(node):
+  open_relays[node] = 0
+
+def is_relay_open(node):
+  return open_relays.get(node, 0)
 

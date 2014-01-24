@@ -25,17 +25,12 @@ import endpoints
 import analyzers
 import graph
 
-controller_id = 'c1'
-
 # Assign the xrun variable used to start processes
 exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
 
 def print_title(title):
     log_info("\n%s\n%s\n" % (title, '=' * len(title)))
-
-def chk(master, endpoints):
-  return master.expect(Expected(controller_id, "Found %d entities" % len(endpoints), 15))
 
 def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
@@ -142,9 +137,8 @@ def runTest(args):
   for y in check_endpoint_startup():
     yield y
 
-  master.clearExpectHistory(controller_id)
-  master.sendLine(controller_id, "discover")
-  yield chk(master, endpoints.get_all().values())
+  for y in action_discover(args, []):
+    yield y
 
   if not getEntities():
     base.testError("no entities found", critical=True)
@@ -159,7 +153,6 @@ def runTest(args):
     action_function = eval('action_%s' % action[0])
     for y in action_function(args, action[1:]):
       yield y
-
 
   # Allow everything time to settle (in case an error is being generated)
   yield base.sleep(5)
@@ -246,8 +239,9 @@ if __name__ == "__main__":
 
   # Create a controller process to send AVB commands to
   controller_dir = os.path.join(rootDir, 'appsval_avb', 'controller', 'avb')
+  controller_id = config['controller']['name']
   controller = ControllerProcess(controller_id, master,
-      output_file=os.path.join(args.logdir, 'cl.log'))
+      output_file=os.path.join(args.logdir, controller_id + '.log'))
 
   # Put the controller ID into the args structure to be used by the action functions
   args.controller_id = controller_id

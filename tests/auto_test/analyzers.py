@@ -12,6 +12,9 @@ all_analyzers = {}
 def get_all():
   return all_analyzers
 
+def get(name):
+  return all_analyzers.get(name, None)
+
 def get_port(name):
   return all_analyzers[name]['port']
 

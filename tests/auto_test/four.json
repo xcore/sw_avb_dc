@@ -1,4 +1,7 @@
 {
+    "controller" : {
+      "name": "c1"
+    },
     "endpoints" : [
         {
             "name": "dc0",
@@ -260,13 +263,14 @@
         }
     ],
     "port_connections" : {
+        "c1"        : [ "dc0_0" ],
         "dc0"       : [ "dc0_0", "dc0_1" ],
         "dc1"       : [ "dc1_0", "dc1_1" ],
         "analyzer0" : [ "analyzer0_0", "analyzer0_1" ],
         "dc2"       : [ "dc2_0", "dc2_1" ],
         "dc3"       : [ "dc3_0", "dc3_1" ],
 
-        "dc0_0"       : [ "dc0" ],
+        "dc0_0"       : [ "dc0", "c1" ],
         "dc0_1"       : [ "dc0", "dc1_0" ],
         "dc1_0"       : [ "dc1", "dc0_1" ],
         "dc1_1"       : [ "dc1", "analyzer0_0" ],

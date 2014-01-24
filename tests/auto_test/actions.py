@@ -88,6 +88,12 @@ def get_expected(args, src, src_stream, dst, dst_stream, command):
 def get_dual_port_nodes(nodes):
   return [node for node in nodes if endpoints.get(node)['ports'] == 2]
 
+def action_discover(args, params_list):
+  args.master.clearExpectHistory(args.controller_id)
+  args.master.sendLine(args.controller_id, "discover")
+  visible_endpoints = graph.get_endpoints_connected_to(args.controller_id)
+  yield args.master.expect(Expected(args.controller_id, "Found %d entities" % len(visible_endpoints), 15))
+
 def action_enumerate(args, params_list):
   entity_id = params_list[0]
 
@@ -222,6 +228,7 @@ def action_link_downup(args, params_list):
 
   # Send the command to open the relay '(r)elay (o)pen'
   args.master.sendLine(analyzer_name, "r o")
+  state.set_relay_open(analyzer_name)
 
   if expected:
     yield args.master.expect(AllOf(expected))
@@ -242,6 +249,7 @@ def action_link_downup(args, params_list):
 
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r c")
+  state.set_relay_closed(analyzer_name)
 
   if expected:
     yield args.master.expect(AllOf(expected))
@@ -250,8 +258,21 @@ def action_link_downup(args, params_list):
 
 def action_link_up(args, params_list):
   analyzer_name = params_list[0]
+
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r c")
+  state.set_relay_closed(analyzer_name)
+
+  # Don't expect anything to happen just from closing the relay
+  yield args.master.expect(None)
+
+def action_link_down(args, params_list):
+  analyzer_name = params_list[0]
+
+  # Send the command to close the relay '(r)elay (c)lose'
+  args.master.sendLine(analyzer_name, "r o")
+  state.set_relay_open(analyzer_name)
+
   # Don't expect anything to happen just from closing the relay
   yield args.master.expect(None)
 
