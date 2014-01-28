@@ -42,6 +42,26 @@ def get_avb_id(user, ep):
 def guid_in_ascii(user, ep):
   return get_avb_id(user, ep).encode('ascii', 'ignore')
 
+def mac_byte_str(mac_str, i):
+  index = len(mac_str) - ((i + 1) * 2)
+  if index < 0:
+    return "0"
+  sub_str = mac_str[index:index+2]
+  sub_str = sub_str.lstrip('0')
+  if sub_str:
+    return sub_str.upper()
+  else:
+    return "0"
+
+def mac_in_ascii(user, ep):
+  avb_id = guid_in_ascii(user, ep).encode('ascii', 'ignore')
+  mac_strs = []
+  indexes = range(0,8)
+  indexes.reverse()
+  for i in indexes:
+    mac_strs += [mac_byte_str(avb_id, i)]
+  return ":".join(mac_strs)
+
 def stream_from_guid(guid):
   return guid[0:4] + guid[-6:] + "0000"
 

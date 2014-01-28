@@ -68,19 +68,25 @@ def controller_timeout_disconnect_seq(test_step, controller_id):
 def talker_new_connect_seq(test_step, user, src, src_stream, dst, dst_stream):
   """ Only on the first time the talker is turned on must the 'ready' be seen.
   """
-  seq = [Expected(ep['name'], "CONNECTING Talker stream #%d" % stream_num, 10)]
-  if not state.get_talker_on_count(ep['name']):
-    seq += [Expected(ep['name'], "Talker stream #%d ready" % stream_num, 10)]
-  seq += [Expected(ep['name'], "Talker stream #%d on" % stream_num, 10)]
+  stream_id = endpoints.stream_from_guid(endpoints.guid_in_ascii(user, endpoints.get(src)))
+  listener_mac = endpoints.mac_in_ascii(user, endpoints.get(dst))
+  seq = [Expected(src, "CONNECTING Talker stream #%d \(%s\) -> Listener %s" %
+            (src_stream, stream_id, listener_mac), 10)]
+  if not state.get_current().get_talker_on_count(src):
+    seq += [Expected(src, "Talker stream #%d ready" % src_stream, 10)]
+  seq += [Expected(src, "Talker stream #%d on" % src_stream, 10)]
 
   talker_connection = [Sequence(seq)]
   return talker_connection
 
-def talker_existing_connect_seq(ep, stream_num):
-    talker_connection = [
-            Sequence([Expected(ep['name'], "CONNECTING Talker stream #%d" % stream_num, 10)])
-        ]
-    return talker_connection
+def talker_existing_connect_seq(test_step, user, src, src_stream, dst, dst_stream):
+  stream_id = endpoints.stream_from_guid(endpoints.guid_in_ascii(user, endpoints.get(src)))
+  listener_mac = endpoints.mac_in_ascii(user, endpoints.get(dst))
+  talker_connection = [
+        Sequence([Expected(src, "CONNECTING Talker stream #%d \(%s\) -> Listener %s" %
+                    (src_stream, stream_id, listener_mac), 10)])
+    ]
+  return talker_connection
 
 def talker_all_disconnect_seq(test_step, user, src, src_stream, dst, dst_stream):
   talker_disconnection = [
