@@ -2,17 +2,17 @@
   "sequence" : [
     { "command" : "link_up analyzer0" },
 
-    { "command" : "connect dc0 0 dc1 0" },
-    { "command" : "connect dc0 0 dc2 0" },
-    { "command" : "connect dc0 0 dc3 0" },
-    { "command" : "connect dc3 0 dc2 0" },
+    { "command" : "connect dc0 0 dc1 0", "checkpoint" : false },
+    { "command" : "connect dc0 0 dc2 0", "checkpoint" : false },
+    { "command" : "connect dc0 0 dc3 0", "checkpoint" : false },
+    { "command" : "connect dc3 0 dc2 0", "checkpoint" : true },
 
     { "command" : "link_downup analyzer0 1" },
 
-    { "command" : "disconnect dc0 0 dc1 0" },
-    { "command" : "disconnect dc0 0 dc2 0" },
-    { "command" : "disconnect dc0 0 dc3 0" },
-    { "command" : "disconnect dc3 0 dc2 0" },
+    { "command" : "disconnect dc0 0 dc1 0", "checkpoint" : false },
+    { "command" : "disconnect dc0 0 dc2 0", "checkpoint" : false },
+    { "command" : "disconnect dc0 0 dc3 0", "checkpoint" : false },
+    { "command" : "disconnect dc3 0 dc2 0", "checkpoint" : true },
 
     { "command" : "connect dc0 0 dc1 0" },
     { "command" : "link_down analyzer0" },

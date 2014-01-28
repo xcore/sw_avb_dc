@@ -3,7 +3,6 @@ import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
 import endpoints
-import state
 import avb_1722
 
 """ The physical connections as defined in the test configuration file. These
@@ -15,7 +14,7 @@ def set_connections(connections):
   global physical_connections
   physical_connections = connections
 
-def _find_path(start, end, path=[]):
+def _find_path(state, start, end, path=[]):
   """ Recursive function to build up the path between the specified start and end point
   """
   path = path + [start]
@@ -30,19 +29,19 @@ def _find_path(start, end, path=[]):
 
   for node in physical_connections[start]:
     if node not in path:
-      newpath = _find_path(node, end, path)
+      newpath = _find_path(state, node, end, path)
       if newpath:
         return newpath
   return None
 
-def find_path(start, end, path=[]):
+def find_path(state, start, end, path=[]):
   """ A front-end for debug purposes
   """
-  path = _find_path(start, end)
+  path = _find_path(state, start, end)
   log_debug("find_path %s -> %s : %s" % (start, end, path))
   return path
 
-def _get_loops(node, path_so_far, loops):
+def _get_loops(state, node, path_so_far, loops):
   """ Recursive function that looks through connections to search for loops.
       Any loop that is found is added to the loops list.
   """
@@ -58,9 +57,9 @@ def _get_loops(node, path_so_far, loops):
         loops += [path_so_far + [dest]]
 
     else:
-      _get_loops(dest, path_so_far + [dest], loops)
+      _get_loops(state, dest, path_so_far + [dest], loops)
 
-def get_loops():
+def get_loops(state):
   """ Find all the loops in the current set of connections.
   """
   loops = []
@@ -70,14 +69,14 @@ def get_loops():
     if not n or any(t.src in loop for loop in loops):
       continue
 
-    _get_loops(t.src, [t.src], loops)
+    _get_loops(state, t.src, [t.src], loops)
 
   log_debug("get_loops got %s" % loops)
   return loops
 
-def is_in_loop(node):
+def is_in_loop(state, node):
   in_loop = False
-  loops = get_loops()
+  loops = get_loops(state)
   for loop in loops:
     if node in loop:
       in_loop = True
@@ -86,7 +85,7 @@ def is_in_loop(node):
   log_debug("is_in_loop %s = %d" % (node, in_loop))
   return in_loop
 
-def get_forward_port(src, dst, node):
+def get_forward_port(state, src, dst, node):
   """ Find the port name that is used to forward out of a node on a path from
       src -> dst. This is done by finding the node in the path. Its forwarding
       port name is the next node in the path. The port ID is the last character
@@ -94,7 +93,7 @@ def get_forward_port(src, dst, node):
   """
   port = None
   try:
-    path = find_path(src, dst)
+    path = find_path(state, src, dst)
     index = path.index(node)
     port_name = path[index + 1]
     port = int(port_name[-1])
@@ -104,10 +103,10 @@ def get_forward_port(src, dst, node):
   log_debug("get_forward_port %s in %s -> %s: %s" % (node, src, dst, port))
   return port
 
-def port_is_egress_in_path(connection, ep_name, port):
+def port_is_egress_in_path(state, connection, ep_name, port):
   """ Determine whether a port is an egress port in a given path
   """
-  path = find_path(connection.talker.src, connection.listener.dst)
+  path = find_path(state, connection.talker.src, connection.listener.dst)
   # As long as the endpoint is in the path before the end
   if path and ep_name in path and ep_name != connection.listener.dst:
     # Determine wether this port is the egress port for the path found
@@ -121,35 +120,21 @@ def port_is_egress_in_path(connection, ep_name, port):
 
   return False
 
-def calculate_expected_bandwidth(ep, port):
+def calculate_expected_bandwidth(state, ep, port):
   ep_name = ep['name']
   bandwidth = 0
   for c,n in state.active_connections.iteritems():
     if not n:
       continue
 
-    if port_is_egress_in_path(c, ep_name, port):
+    if port_is_egress_in_path(state, c, ep_name, port):
       # A bridge must reserve an extra byte per packet
       is_bridge = ep_name != c.talker.src
       bandwidth += avb_1722.calculate_stream_bandwidth(c.talker, is_bridge)
 
   return bandwidth
 
-def check_forward_bandwidth(expected):
-  (ep, port) = expected.completionArgs
-  try:
-    bandwidth = int(expected.prevLine.split(" ")[-1])
-    expected_bandwidth = calculate_expected_bandwidth(ep, port)
-    if bandwidth != expected_bandwidth:
-      base.testError("Bandwith check for %s:%d failed - %d != %d" % (ep['name'], port,
-            bandwidth, expected_bandwidth))
-    else:
-      log_debug("Bandwith check for %s:%d - %d OK" % (ep['name'], port, bandwidth))
-
-  except:
-    log_error("Unable to process bandwidth line '%s'" % expected.prevLine)
-
-def port_will_see_bandwidth_change(src, src_stream, ep_name, port, command):
+def port_will_see_bandwidth_change(state, src, src_stream, ep_name, port, command):
   num_active_streams = 0
   
   # Look at all connections of this src stream
@@ -157,7 +142,7 @@ def port_will_see_bandwidth_change(src, src_stream, ep_name, port, command):
     if not n or c.talker.src != src or c.talker.src_stream != src_stream:
       continue
 
-    if port_is_egress_in_path(c, ep_name, port):
+    if port_is_egress_in_path(state, c, ep_name, port):
       num_active_streams += 1
 
   log_debug("port_will_see_bandwidth_change found %d active streams for %s:%s" % (
@@ -172,7 +157,7 @@ def port_will_see_bandwidth_change(src, src_stream, ep_name, port, command):
     # stream as this will be removed
     return num_active_streams == 1
 
-def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
+def node_will_see_stream_enable(state, src, src_stream, dst, dst_stream, node):
   """ Determine whether a given node will see the stream between src/dst as a new
       stream. Returns True if it will be a new stream, False if it is an existing
       stream.
@@ -189,7 +174,7 @@ def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
     if not n or c.talker.src != src or c.talker.src_stream != src_stream:
       continue
 
-    nodes = find_path(src, c.listener.dst)
+    nodes = find_path(state, src, c.listener.dst)
     log_debug("What about path %s?" % nodes)
       
     # Look for all nodes past this one in the path. If one of them is connected to
@@ -206,7 +191,7 @@ def node_will_see_stream_enable(src, src_stream, dst, dst_stream, node):
 
   return True
 
-def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
+def node_will_see_stream_disable(state, src, src_stream, dst, dst_stream, node):
   """ Determine whether a given node will see being disabled if it is turned off.
   """
   log_debug("node_will_see_stream_disable %s ?" % node)
@@ -223,7 +208,7 @@ def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
     if c.talker.src != src or c.talker.src_stream != src_stream:
       continue
 
-    nodes = find_path(src, c.listener.dst)
+    nodes = find_path(state, src, c.listener.dst)
     log_debug("What about path %s?" % nodes)
       
     # Look for all nodes past this one in the path. If one of them is connected to
@@ -244,10 +229,10 @@ def node_will_see_stream_disable(src, src_stream, dst, dst_stream, node):
 
   return True
 
-def get_endpoints_connected_to(node):
+def get_endpoints_connected_to(state, node):
   connected = set()
   for endpoint in endpoints.get_all():
-    if find_path(node, endpoint):
+    if find_path(state, node, endpoint):
       connected |= set([endpoint])
   log_debug("get_endpoints_connected_to %s: %s" % (node, connected))
   return connected
