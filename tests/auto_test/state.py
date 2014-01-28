@@ -1,3 +1,5 @@
+import copy
+
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
@@ -5,19 +7,6 @@ from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 import endpoints
 import state_rendering as rendering
 import graph
-
-''' Track the current connections in the topology.
-     - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
-     - active_talkers     contains the active talkers (src:src_stream) and the count of how may times they are used
-     - active_listeners   contains the active listeners (dst:dst_stream). They can only accept one connection.
-'''
-active_connections = {}
-active_talkers = {}
-active_listeners = {}
-talker_on_count = {}
-clock_source_master = {}
-
-open_relays = {}
 
 class Connection(object):
   def __init__(self, talker, listener):
@@ -82,189 +71,220 @@ class Listener(object):
     return self.dst + ":" + str(self.dst_stream)
 
 
-def dump_state():
-  log_debug("Current state:")
-  for t,n in active_talkers.iteritems():
-    log_debug("Talker %s : %d" % (t, n))
-  for l,n in active_listeners.iteritems():
-    log_debug("Listeners %s : %d" % (l, n))
-  for c,n in active_connections.iteritems():
-    log_debug("Connection %s : %d" % (c, n))
-  for c,n in talker_on_count.iteritems():
-    log_debug("Talker on count %s : %d" % (c, n))
-  for c,n in clock_source_master.iteritems():
-    if n:
-      log_debug("Clock source master %s" % c)
+class State(object):
+  def __init__(self):
+    """ Track the current connections in the topology.
+         - active_connections contains the list of connections (src:src_stream->dst:dst_stream)
+         - active_talkers     contains the active talkers (src:src_stream) and the count of how may times they are used
+         - active_listeners   contains the active listeners (dst:dst_stream). They can only accept one connection.
+    """
+    self.active_connections = {}
+    self.active_talkers = {}
+    self.active_listeners = {}
+    self.talker_on_count = {}
+    self.clock_source_master = {}
+    self.open_relays = {}
 
-  rendering.draw_state(sorted(endpoints.get_all().keys()))
+  def dump(self):
+    log_debug("State:")
+    for t,n in self.active_talkers.iteritems():
+      log_debug("Talker %s : %d" % (t, n))
+    for l,n in self.active_listeners.iteritems():
+      log_debug("Listeners %s : %d" % (l, n))
+    for c,n in self.active_connections.iteritems():
+      log_debug("Connection %s : %d" % (c, n))
+    for c,n in self.talker_on_count.iteritems():
+      log_debug("Talker on count %s : %d" % (c, n))
+    for c,n in self.clock_source_master.iteritems():
+      if n:
+        log_debug("Clock source master %s" % c)
 
-def connect(src, src_stream, dst, dst_stream):
-  """ A connection will occur if the connection doesn't already exist
-      and the listener is not in use. There must also be a valid path
-      between the two endpoints.
-  """
-  if (connected(src, src_stream, dst, dst_stream) or
-      listener_active_count(dst, dst_stream)):
-    return
+    rendering.draw_state(self, sorted(endpoints.get_all().keys()))
 
-  path = graph.find_path(src, dst)
-  if not path:
-    return;
+  def connect(self, src, src_stream, dst, dst_stream):
+    """ A connection will occur if the connection doesn't already exist
+        and the listener is not in use. There must also be a valid path
+        between the two endpoints.
+    """
+    if (self.connected(src, src_stream, dst, dst_stream) or
+        self.listener_active_count(dst, dst_stream)):
+      return
 
-  talker = Talker(src, src_stream)
-  listener = Listener(dst, dst_stream)
-  connection = Connection(talker, listener)
+    path = graph.find_path(self, src, dst)
+    if not path:
+      return
 
-  talker_on_count[src] = talker_on_count.get(src, 0) + 1
-  active_talkers[talker] = active_talkers.get(talker, 0) + 1
-  active_listeners[listener] = 1 # Listeners can only accept one connection
-  active_connections[connection] = active_connections.get(connection, 0) + 1
-
-def disconnect(src, src_stream, dst, dst_stream):
-  if not connected(src, src_stream, dst, dst_stream):
-    return
-
-  talker = Talker(src, src_stream)
-  listener = Listener(dst, dst_stream)
-  connection = Connection(talker, listener)
-
-  assert active_talkers.get(talker, 0)
-  active_talkers[talker] -= 1
-
-  assert active_listeners.get(listener, 0)
-  active_listeners[listener] -= 1
-
-  assert active_connections.get(connection, 0)
-  active_connections[connection] -= 1
-
-def connected(src, src_stream, dst, dst_stream=None):
-  """ Check whether a src stream is connected to a dest node. Can specify the
-      dest stream if desired.
-  """
-  talker = Talker(src, src_stream)
-  listener = Listener(dst, dst_stream)
-  connected = False
-  if dst_stream:
+    talker = Talker(src, src_stream)
+    listener = Listener(dst, dst_stream)
     connection = Connection(talker, listener)
-    if active_connections.get(connection, 0):
-        connected = True
 
-  else:
-    for c,n in active_connections.iteritems():
-      if not n:
-        continue
+    self.talker_on_count[src] = self.talker_on_count.get(src, 0) + 1
+    self.active_talkers[talker] = self.active_talkers.get(talker, 0) + 1
+    self.active_listeners[listener] = 1 # Listeners can only accept one connection
+    self.active_connections[connection] = self.active_connections.get(connection, 0) + 1
 
-      if c.talker == talker and c.listener.dst == dst:
-        connected = True
+  def disconnect(self, src, src_stream, dst, dst_stream):
+    if not self.connected(src, src_stream, dst, dst_stream):
+      return
 
-  log_debug("connected {src} {src_stream} {dst} {dst_stream} ? {answer}".format(
-        src=src, src_stream=src_stream, dst=dst, dst_stream=dst_stream,
-        answer=connected))
-  return connected
+    talker = Talker(src, src_stream)
+    listener = Listener(dst, dst_stream)
+    connection = Connection(talker, listener)
 
-def talker_active_count(src, src_stream):
-  talker = Talker(src, src_stream)
-  return active_talkers.get(talker, 0)
+    assert self.active_talkers.get(talker, 0)
+    self.active_talkers[talker] -= 1
 
-def get_talker_on_count(src):
-  return talker_on_count.get(src, 0)
+    assert self.active_listeners.get(listener, 0)
+    self.active_listeners[listener] -= 1
 
-def listener_active_count(dst, dst_stream):
-  listener = Listener(dst, dst_stream)
-  return active_listeners.get(listener, 0)
+    assert self.active_connections.get(connection, 0)
+    self.active_connections[connection] -= 1
 
-def get_talker_state(src, src_stream, dst, dst_stream, action):
-  if graph.find_path(src, dst) is None:
-    state = 'redundant'
+  def connected(self, src, src_stream, dst, dst_stream=None):
+    """ Check whether a src stream is connected to a dest node. Can specify the
+        dest stream if desired.
+    """
+    talker = Talker(src, src_stream)
+    listener = Listener(dst, dst_stream)
+    connected = False
+    if dst_stream:
+      connection = Connection(talker, listener)
+      if self.active_connections.get(connection, 0):
+          connected = True
 
-  elif action == 'connect':
-    if connected(src, src_stream, dst, dst_stream):
-      state = 'redundant'
     else:
-      if listener_active_count(dst, dst_stream):
+      for c,n in self.active_connections.iteritems():
+        if not n:
+          continue
+
+        if c.talker == talker and c.listener.dst == dst:
+          connected = True
+
+    # Note that the format of each operand is %s because that copes with a None
+    log_debug("connected %s %s %s %s ? %s" % (src, src_stream, dst, dst_stream, connected))
+    return connected
+
+  def talker_active_count(self, src, src_stream):
+    talker = Talker(src, src_stream)
+    return self.active_talkers.get(talker, 0)
+
+  def get_talker_on_count(self, src):
+    return self.talker_on_count.get(src, 0)
+
+  def listener_active_count(self, dst, dst_stream):
+    listener = Listener(dst, dst_stream)
+    return self.active_listeners.get(listener, 0)
+
+  def get_talker_state(self, src, src_stream, dst, dst_stream, action):
+    if graph.find_path(self, src, dst) is None:
+      state = 'talker_redundant'
+
+    elif action == 'connect':
+      if self.connected(src, src_stream, dst, dst_stream):
+        state = 'talker_redundant'
+      else:
+        if self.listener_active_count(dst, dst_stream):
+          state = 'talker_redundant'
+        elif self.talker_active_count(src, src_stream):
+          state = 'talker_existing'
+        else:
+          state = 'talker_new'
+
+    elif action == 'disconnect':
+      if not self.connected(src, src_stream, dst, dst_stream):
+        state = 'talker_redundant'
+      else:
+        if self.talker_active_count(src, src_stream) == 1:
+          state = 'talker_all'
+        else:
+          state = 'talker_existing'
+
+    else:
+      base.testError("Unknown action '%s'" % action, critical=True)
+
+    log_debug("get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
+    return (state + '_' + action)
+
+  def get_listener_state(self, src, src_stream, dst, dst_stream, action):
+    if graph.find_path(self, src, dst) is None:
+      state = 'listener_redundant'
+
+    elif action == 'connect':
+      if self.listener_active_count(dst, dst_stream):
+        state = 'listener_redundant'
+      else:
+        state = 'listener'
+
+    elif action == 'disconnect':
+      if self.connected(src, src_stream, dst, dst_stream):
+        state = 'listener'
+      else:
+        state = 'listener_redundant'
+
+    else:
+      base.testError("Unknown action '%s'" % action, critical=True)
+
+    log_debug("get_listener_state for %s %d: %s" % (dst, dst_stream, state))
+    return (state + '_' + action)
+
+  def get_controller_state(self, controller_id, src, src_stream, dst, dst_stream, action):
+    controllable_endpoints = graph.get_endpoints_connected_to(self, controller_id)
+    if src not in controllable_endpoints or dst not in controllable_endpoints:
+      state = 'timeout'
+
+    elif action == 'connect':
+      if self.connected(src, src_stream, dst, dst_stream):
+        state = 'success'
+      elif self.listener_active_count(dst, dst_stream):
+        state = 'listener_exclusive'
+      else:
+        state = 'success'
+
+    elif action == 'disconnect':
+      if not self.connected(src, src_stream, dst, dst_stream):
         state = 'redundant'
-      elif talker_active_count(src, src_stream):
-        state = 'talker_existing'
       else:
-        state = 'talker_new'
+        state = 'success'
 
-  elif action == 'disconnect':
-    if not connected(src, src_stream, dst, dst_stream):
-      state = 'redundant'
     else:
-      if talker_active_count(src, src_stream) == 1:
-        state = 'talker_all'
-      else:
-        state = 'talker_existing'
+      base.testError("Unknown action '%s'" % action, critical=True)
 
-  else:
-    base.testError("Unknown action '%s'" % action, critical=True)
+    log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
+    return ('controller_' + state + '_' + action)
 
-  log_debug("get_talker_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
-  return (state + '_' + action)
+  def is_clock_source_master(self, node):
+    return self.clock_source_master.get(node, 0)
 
-def get_listener_state(src, src_stream, dst, dst_stream, action):
-  if graph.find_path(src, dst) is None:
-    state = 'redundant'
+  def set_clock_source_master(self, node):
+    self.clock_source_master[node] = 1
 
-  elif action == 'connect':
-    if listener_active_count(dst, dst_stream):
-      state = 'redundant'
-    else:
-      state = 'listener'
+  def set_clock_source_slave(self, node):
+    self.clock_source_master[node] = 0
 
-  elif action == 'disconnect':
-    if connected(src, src_stream, dst, dst_stream):
-      state = 'listener'
-    else:
-      state = 'redundant'
+  def set_relay_open(self, node):
+    self.open_relays[node] = 1
 
-  else:
-    base.testError("Unknown action '%s'" % action, critical=True)
+  def set_relay_closed(self, node):
+    self.open_relays[node] = 0
 
-  log_debug("get_listener_state for %s %d: %s" % (dst, dst_stream, state))
-  return (state + '_' + action)
+  def is_relay_open(self, node):
+    return self.open_relays.get(node, 0)
 
-def get_controller_state(controller_id, src, src_stream, dst, dst_stream, action):
-  controllable_endpoints = graph.get_endpoints_connected_to(controller_id)
-  if src not in controllable_endpoints or dst not in controllable_endpoints:
-    state = 'timeout'
+# Global state variables (not to be accessed directly)
+_current = State()
+_next = State()
 
-  elif action == 'connect':
-    if connected(src, src_stream, dst, dst_stream):
-      state = 'success'
-    elif listener_active_count(dst, dst_stream):
-      state = 'listener_exclusive'
-    else:
-      state = 'success'
 
-  elif action == 'disconnect':
-    if not connected(src, src_stream, dst, dst_stream):
-      state = 'redundant'
-    else:
-      state = 'success'
+# Access functions
+def get_current():
+  return _current
 
-  else:
-    base.testError("Unknown action '%s'" % action, critical=True)
+def get_next():
+  return _next
 
-  log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
-  return ('controller_' + state + '_' + action)
-
-def is_clock_source_master(node):
-  return clock_source_master.get(node, 0)
-
-def set_clock_source_master(node):
-  clock_source_master[node] = 1
-
-def set_clock_source_slave(node):
-  clock_source_master[node] = 0
-
-def set_relay_open(node):
-  open_relays[node] = 1
-
-def set_relay_closed(node):
-  open_relays[node] = 0
-
-def is_relay_open(node):
-  return open_relays.get(node, 0)
+def move_next_to_current():
+  global _next
+  global _current
+  _current = _next
+  _next = copy.deepcopy(_current)
 

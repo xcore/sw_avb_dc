@@ -10,19 +10,19 @@ import endpoints
 import analyzers
 import graph
 
-def check_set_clock_masters(args, do_checks):
-  for loop in graph.get_loops():
+def check_set_clock_masters(args, test_step, expected):
+  for loop in graph.get_loops(state.get_current()):
     loop_master = loop[0]
     for ep_name in loop:
-      if state.is_clock_source_master(ep_name):
+      if state.get_current().is_clock_source_master(ep_name):
         loop_master = ep_name
         break
 
-    if not state.is_clock_source_master(loop_master):
+    if not state.get_current().is_clock_source_master(loop_master):
       ep = endpoints.get(loop_master)
       args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
             endpoints.guid_in_ascii(args.user, ep)))
-      state.set_clock_source_master(ep['name'])
+      state.get_next().set_clock_source_master(ep['name'])
 
       if do_checks:
         controller_expect = [Expected(args.controller_id, "Success", 5)]
@@ -31,10 +31,10 @@ def check_set_clock_masters(args, do_checks):
 
 def check_clear_clock_masters(args, do_checks):
   for name,ep in endpoints.get_all().iteritems():
-    if state.is_clock_source_master(name) and not graph.is_in_loop(ep['name']):
+    if state.get_current().is_clock_source_master(name) and not graph.is_in_loop(state.get_current(), ep['name']):
       args.master.sendLine(args.controller_id, "set_clock_source_slave 0x%s" % (
             endpoints.guid_in_ascii(args.user, ep)))
-      state.set_clock_source_slave(ep['name'])
+      state.get_next().set_clock_source_slave(ep['name'])
 
       if do_checks:
         controller_expect = [Expected(args.controller_id, "Success", 5)]
@@ -45,9 +45,8 @@ def controller_connect(args, do_checks, src, src_stream, dst, dst_stream):
   talker_ep = endpoints.get(src)
   listener_ep = endpoints.get(dst)
 
-  state.connect(src, src_stream, dst, dst_stream)
-  for y in check_set_clock_masters(args, do_checks):
-    yield y
+  state.get_next().connect(src, src_stream, dst, dst_stream)
+  check_set_clock_masters(args, test_step, expected)
 
   args.master.sendLine(args.controller_id, "connect 0x%s %d 0x%s %d" % (
         endpoints.guid_in_ascii(args.user, talker_ep), src_stream,
@@ -57,9 +56,8 @@ def controller_disconnect(args, do_checks, src, src_stream, dst, dst_stream):
   talker_ep = endpoints.get(src)
   listener_ep = endpoints.get(dst)
 
-  state.disconnect(src, src_stream, dst, dst_stream)
-  for y in check_clear_clock_masters(args, do_checks):
-    yield y
+  state.get_next().disconnect(src, src_stream, dst, dst_stream)
+  check_clear_clock_masters(args, test_step, expected)
 
   args.master.sendLine(args.controller_id, "disconnect 0x%s %d 0x%s %d" % (
         endpoints.guid_in_ascii(args.user, talker_ep), src_stream,
@@ -71,19 +69,19 @@ def controller_enumerate(args, avb_ep):
         endpoints.guid_in_ascii(args.user, entity_id)))
 
 def get_expected(args, src, src_stream, dst, dst_stream, command):
-  state.dump_state()
-  talker_state = state.get_talker_state(src, src_stream, dst, dst_stream, command)
-  talker_expect = sequences.expected_seq(talker_state)(endpoints.get(src), src_stream)
+  state.get_current().dump()
+  talker_state = state.get_current().get_talker_state(src, src_stream, dst, dst_stream, command)
+  talker_expect = sequences.expected_seq(talker_state)(test_step, args.user, src, src_stream, dst, dst_stream)
 
-  listener_state = state.get_listener_state(src, src_stream, dst, dst_stream, command)
   listener_expect = sequences.expected_seq(listener_state)(endpoints.get(dst), dst_stream)
+  listener_state = state.get_current().get_listener_state(src, src_stream, dst, dst_stream, command)
   analyzer_state = "analyzer_" + listener_state
   analyzer_expect = sequences.expected_seq(analyzer_state)(endpoints.get(src), src_stream,
       endpoints.get(dst), dst_stream)
 
   analyzer_expect += sequences.analyzer_qav_seq(src, dst, command, args.user)
 
-  controller_state = state.get_controller_state(args.controller_id,
+  controller_state = state.get_current().get_controller_state(args.controller_id,
       src, src_stream, dst, dst_stream, command)
   controller_expect = sequences.expected_seq(controller_state)(args.controller_id)
   return (talker_expect, listener_expect, controller_expect, analyzer_expect)
@@ -228,15 +226,15 @@ def action_link_downup(args, do_checks, params_list):
   expected = []
 
   # Expect all the connections which cross the relay to be lost
-  for c,n in state.active_connections.iteritems():
     if n and analyzer_name in graph.find_path(c.talker.src, c.listener.dst):
       expected += sequences.analyzer_listener_disconnect_seq(
+  for c,n in state.get_current().active_connections.iteritems():
                       endpoints.get(c.talker.src), c.talker.src_stream,
                       endpoints.get(c.listener.dst), c.listener.dst_stream)
 
   # Send the command to open the relay '(r)elay (o)pen'
   args.master.sendLine(analyzer_name, "r o")
-  state.set_relay_open(analyzer_name)
+  state.get_next().set_relay_open(analyzer_name)
 
   if do_checks and expected:
     yield args.master.expect(AllOf(expected))
@@ -247,10 +245,10 @@ def action_link_downup(args, do_checks, params_list):
   expected = []
 
   # Expect all the connections which cross the relay to be restored
-  state.set_relay_closed(analyzer_name)
-  for c,n in state.active_connections.iteritems():
-    if n and analyzer_name in graph.find_path(c.talker.src, c.listener.dst):
-      expected += sequences.analyzer_listener_connect_seq(
+  state.get_next().set_relay_closed(analyzer_name)
+  for c,n in state.get_current().active_connections.iteritems():
+    if n and analyzer_name in graph.find_path(state.get_current(), c.talker.src, c.listener.dst):
+      found += sequences.analyzer_listener_connect_seq(test_step,
                       endpoints.get(c.talker.src), c.talker.src_stream,
                       endpoints.get(c.listener.dst), c.listener.dst_stream)
 
@@ -265,7 +263,7 @@ def action_link_up(args, do_checks, params_list):
 
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r c")
-  state.set_relay_closed(analyzer_name)
+  state.get_next().set_relay_closed(analyzer_name)
 
   # Always allow time for the relay to actually be opened
   yield base.sleep(0.1)
@@ -276,7 +274,7 @@ def action_link_down(args, do_checks, params_list):
   expected = []
   affected_talkers = set()
   # Expect all the connections which cross the relay to be lost
-  for c,n in state.active_connections.iteritems():
+  for c,n in state.get_current().active_connections.iteritems():
     if not n:
       continue
 
@@ -287,15 +285,15 @@ def action_link_down(args, do_checks, params_list):
       expected += sequences.analyzer_listener_disconnect_seq(
                       endpoints.get(c.talker.src), c.talker.src_stream,
                       endpoints.get(c.listener.dst), c.listener.dst_stream)
-      state.disconnect(c.talker.src, c.talker.src_stream, c.listener.dst, c.listener.dst_stream)
+      state.get_next().disconnect(c.talker.src, c.talker.src_stream, c.listener.dst, c.listener.dst_stream)
 
   for talker in affected_talkers:
-    if not state.talker_active_count(talker.src, talker.src_stream):
       expected += [Expected(talker.src, "Talker stream #%d off" % talker.src_stream, 30)]
+    if not state.get_next().talker_active_count(talker.src, talker.src_stream):
 
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r o")
-  state.set_relay_open(analyzer_name)
+  state.get_next().set_relay_open(analyzer_name)
 
   if do_checks and expected:
     yield args.master.expect(AllOf(expected))
@@ -310,7 +308,7 @@ def action_check_connections(args, do_checks, params_list):
   expected = []
 
   # Expect all connections to be restored
-  for c,n in state.active_connections.iteritems():
+  for c,n in state.get_current().active_connections.iteritems():
     if n:
       expected += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
                       endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)),

@@ -22,7 +22,7 @@ def controller_enumerate_seq(controller_id, endpoint_name):
     """
     expected_seq = []
 
-    visible_endpoints = graph.get_endpoints_connected_to(controller_id)
+    visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), controller_id)
     if endpoint_name not in visible_endpoints:
       return Expected(controller_id, "No descriptors found", 10)
 
@@ -222,10 +222,10 @@ def analyzer_qav_seq(src, dst, command, user):
 
     # If the analyzer is a QAV analyzer then it will detect the stream through
     # the packets being forwarded through it
-    if analyzer_name in graph.find_path(src, dst):
+    if analyzer_name in graph.find_path(state.get_current(), src, dst):
       guid_string = endpoints.guid_in_ascii(user, endpoints.get(src))
       stream_string = endpoints.stream_from_guid(guid_string)
-      if command == 'connect':
+      if action == 'connect':
         action_string = "Adding"
         completionFn = hook_register_error
       else:

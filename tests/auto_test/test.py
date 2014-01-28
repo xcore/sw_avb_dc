@@ -147,6 +147,7 @@ def runTest(args):
     # Ensure that any remaining output of a previous test step is flushed
     for process in getActiveProcesses():
       master.clearExpectHistory(process)
+    state.move_next_to_current()
 
     command = test_step.command
     print_title("Test %d - %s" % (test_num+1, command))
