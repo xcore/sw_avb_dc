@@ -32,7 +32,7 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
@@ -86,7 +86,7 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
@@ -140,7 +140,7 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
@@ -194,7 +194,7 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" :"current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
