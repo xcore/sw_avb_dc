@@ -1,6 +1,6 @@
 import os
 
-from twisted.internet import reactor
+from twisted.internet import reactor, defer
 
 import xmos.test.process as process
 import xmos.test.master as master
@@ -27,36 +27,51 @@ def siggen_frequency(talker_ep, i):
   index = "%d" % (base + i + siggen_offset)
   return siggen["frequencies"][index]
 
-def start_analyzer(rootDir, master, name, adapter_id, port, analyzer_type, args):
-  log_info("Starting %s analyzer %s" % (analyzer_type, name))
-  target_name = name + '_target'
-  target = process.XrunProcess(target_name, master,
-      output_file=os.path.join(args.logdir, target_name + '_console.log'))
-
-  if analyzer_type == 'audio':
-    target_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'app_audio_analyzer_avb', 'bin', 'audio_analyzer.xe')
-    analyzer_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'host_audio_analyzer', 'audio_analyzer')
-  elif analyzer_type == 'qav':
-    target_bin = os.path.join(rootDir, 'sw_ethernet_tap', 'app_avb_tester', 'bin', 'app_avb_tester.xe')
-    analyzer_bin = os.path.join(rootDir, 'sw_ethernet_tap', 'host_avb_tester', 'avb_tester')
-  else:
-    test_error("%s: unknown type '%s'" % (name, analyzer_type), critical=True)
+def startAnalyzer(combined_args):
+  (name, adapter_id, target_bin, analyzer_bin, target_process, analyzer_process, port, args) = combined_args
 
   # Windows requires the absolute path of xrun
   exe_name = base.exe_name('xrun')
   xrun = base.file_abspath(exe_name)
 
-  reactor.spawnProcess(target, xrun,
+  log_info("Starting analyzer %s" % name)
+
+  reactor.spawnProcess(target_process, xrun,
       [xrun, '--adapter-id', adapter_id, '--xscope-port', 'localhost:%d' % port, target_bin],
       env=os.environ, path=args.logdir)
 
-  analyzer = process.Process(name, master,
-      output_file=os.path.join(args.logdir, name + '_console.log'))
-  reactor.spawnProcess(analyzer, analyzer_bin, [analyzer_bin, '-p', '%d' % port],
+  reactor.spawnProcess(analyzer_process, analyzer_bin, [analyzer_bin, '-p', '%d' % port],
       env=os.environ, path=args.logdir)
+
+def startAnalyzerWithDelay(rootDir, master, delay, name, adapter_id, analyzer, args):
+  # Need to ensure that the endpoint and process are created and registered before the
+  # master task is started
+  analyzer_process = process.Process(name, master,
+      output_file=os.path.join(args.logdir, name + '_console.log'))
+
+  target_name = name + '_target'
+  target_process = process.XrunProcess(target_name, master,
+      output_file=os.path.join(args.logdir, target_name + '_console.log'))
+
+  ep_bin = os.path.join(rootDir, 'sw_avb_dc', 'app_daisy_chain', 'bin', 'app_daisy_chain.xe')
+  if analyzer['type'] == 'audio':
+    target_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'app_audio_analyzer_avb', 'bin', 'audio_analyzer.xe')
+    analyzer_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'host_audio_analyzer', 'audio_analyzer')
+  elif analyzer['type'] == 'qav':
+    target_bin = os.path.join(rootDir, 'sw_ethernet_tap', 'app_avb_tester', 'bin', 'app_avb_tester.xe')
+    analyzer_bin = os.path.join(rootDir, 'sw_ethernet_tap', 'host_avb_tester', 'avb_tester')
+  else:
+    test_error("%s: unknown type '%s'" % (name, analyzer['type']), critical=True)
+
+  log_info("Starting %s analyzer %s in %.3f" % (analyzer['type'], name, delay))
+  d = defer.Deferred()
+  reactor.callLater(delay, d.callback, (name, adapter_id, target_bin, analyzer_bin,
+       target_process, analyzer_process, analyzer['port'], args))
+  d.addCallback(startAnalyzer)
 
 def start(rootDir, args, master, analyzers):
   overrides = {}
+  delay = 0
   for override in args.types:
     if '=' not in override:
       test_error("Type override should be of the form '<name>=<type>', found '%s'" % override,
@@ -75,6 +90,7 @@ def start(rootDir, args, master, analyzers):
       analyzer['type'] = overrides[name]
 
     user_config = analyzer['users'][args.user]
-    start_analyzer(rootDir, master, name, user_config['xrun_adapter_id'],
-        analyzer['port'], analyzer['type'], args)
+    startAnalyzerWithDelay(rootDir, master, delay, name, user_config['xrun_adapter_id'], analyzer, args)
+
+    delay += 0.5
 
