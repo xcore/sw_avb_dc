@@ -98,5 +98,5 @@ def start(rootDir, args, master, analyzers):
     user_config = analyzer['users'][args.user]
     startAnalyzerWithDelay(rootDir, master, delay, name, user_config['xrun_adapter_id'], analyzer, args)
 
-    delay += 0.5
+    delay += 1.0
 
