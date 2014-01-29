@@ -69,7 +69,7 @@ def startAnalyzerWithDelay(rootDir, master, delay, name, adapter_id, analyzer, a
        target_process, analyzer_process, analyzer['port'], args))
   d.addCallback(startAnalyzer)
 
-def start(rootDir, args, master, analyzers):
+def start(rootDir, args, master, analyzers, test_config):
   overrides = {}
   delay = 0
 
