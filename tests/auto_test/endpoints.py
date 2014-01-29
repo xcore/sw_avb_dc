@@ -63,7 +63,7 @@ def mac_in_ascii(user, ep):
   return ":".join(mac_strs)
 
 def stream_from_guid(guid):
-  return guid[0:4] + guid[-6:] + "0000"
+  return guid[0:4].upper() + guid[-6:].upper() + "0000"
 
 def determine_grandmaster(user):
   """ From the endpoints described determine which will be the grandmaster.
