@@ -72,6 +72,12 @@ def startAnalyzerWithDelay(rootDir, master, delay, name, adapter_id, analyzer, a
 def start(rootDir, args, master, analyzers):
   overrides = {}
   delay = 0
+
+  # Read any test file specified types
+  for name,new_type in test_config.get('types', {}).iteritems():
+    overrides[name] = new_type
+
+  # Read any command-line specified types
   for override in args.types:
     if '=' not in override:
       test_error("Type override should be of the form '<name>=<type>', found '%s'" % override,

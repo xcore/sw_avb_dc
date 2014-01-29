@@ -251,7 +251,7 @@ if __name__ == "__main__":
   # Store the connectivity so that paths between nodes can be determined
   graph.set_connections(config['port_connections'])
 
-  analyzers.start(rootDir, args, master, config['analyzers'])
+  analyzers.start(rootDir, args, master, config['analyzers'], test_config)
   endpoints.start(rootDir, args, config['endpoints'], master)
 
   # Create a controller process to send AVB commands to
