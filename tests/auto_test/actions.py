@@ -76,16 +76,18 @@ def get_expected(args, test_step, src, src_stream, dst, dst_stream, command):
   talker_expect = sequences.expected_seq(talker_state)(test_step, args.user, src, src_stream, dst, dst_stream)
 
   listener_state = state.get_current().get_listener_state(src, src_stream, dst, dst_stream, command)
-  listener_expect = sequences.expected_seq(listener_state)(test_step, dst, dst_stream)
   analyzer_state = "analyzer_" + listener_state
   analyzer_expect = sequences.expected_seq(analyzer_state)(test_step, src, src_stream, dst, dst_stream)
-
   analyzer_expect += sequences.analyzer_qav_seq(test_step, src, dst, command, args.user)
+
+  if analyzer_expect:
+    analyzer_expect = [AllOf(analyzer_expect)]
+  listener_expect = sequences.expected_seq(listener_state)(test_step, dst, dst_stream, analyzer_expect)
 
   controller_state = state.get_current().get_controller_state(args.controller_id,
       src, src_stream, dst, dst_stream, command)
   controller_expect = sequences.expected_seq(controller_state)(test_step, args.controller_id)
-  return (talker_expect, listener_expect, controller_expect, analyzer_expect)
+  return (talker_expect, listener_expect, controller_expect)
 
 def get_dual_port_nodes(nodes):
   return [node for node in nodes if endpoints.get(node)['ports'] == 2]
@@ -119,7 +121,7 @@ def action_connect(args, test_step, expected, params_list):
 
   controller_connect(args, test_step, expected, src, src_stream, dst, dst_stream)
 
-  (talker_expect, listener_expect, controller_expect, analyzer_expect) = get_expected(
+  (talker_expect, listener_expect, controller_expect) = get_expected(
       args, test_step, src, src_stream, dst, dst_stream, 'connect')
 
   # Find the path between the src and dst and check whether there are any nodes between them
@@ -173,7 +175,7 @@ def action_disconnect(args, test_step, expected, params_list):
 
   controller_disconnect(args, test_step, expected, src, dst_stream, dst, dst_stream)
 
-  (talker_expect, listener_expect, controller_expect, analyzer_expect) = get_expected(
+  (talker_expect, listener_expect, controller_expect) = get_expected(
       args, test_step, src, src_stream, dst, dst_stream, 'disconnect')
 
   # Find the path between the src and dst and check whether there are any nodes between them
@@ -232,7 +234,7 @@ def action_ping(args, test_step, expected, params_list):
   args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
   args.master.sendLine(args.controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
 
-  if test_step.do_checks:
+  if test_step.do_checks and (node_expect or controller_expect):
     expected += [AllOf(node_expect + controller_expect)]
 
   yield args.master.expect(None)

@@ -120,13 +120,14 @@ def talker_redundant_disconnect_seq(test_step, user, src, src_stream, dst, dst_s
 #
 # Listener sequences
 #
-def listener_connect_seq(test_step, dst, dst_stream):
+def listener_connect_seq(test_step, dst, dst_stream, analyzer_expect):
   ep = endpoints.get(dst)
   listener_connection = [
-      Expected(dst, "CONNECTING Listener sink #%d" % dst_stream, 30),
+      Expected(dst, "CONNECTING Listener sink #%d" % dst_stream, 20),
       AllOf([Expected(dst, "%d -> %d" % (n, n), 10) for n in range(ep['in_channels'])]),
       AllOf([Expected(dst, "Media output %d locked" % n, 10) for n in range(ep['in_channels'])])
   ]
+  listener_connection += analyzer_expect
   if test_step.checkpoint is None:
     return [Sequence(listener_connection +
               [NoneOf([Expected(dst, "Media output \d+ lost lock", 10)])
@@ -134,26 +135,23 @@ def listener_connect_seq(test_step, dst, dst_stream):
   else:
     return listener_connection
 
-def listener_disconnect_seq(test_step, dst, dst_stream, timeout=10):
-    listener_disconnection = [
-            Expected(dst, "DISCONNECTING Listener sink #%d" % dst_stream, timeout)
-        ]
-    return listener_disconnection
+def listener_disconnect_seq(test_step, dst, dst_stream, analyzer_expect):
+  listener_disconnection = [
+          Expected(dst, "DISCONNECTING Listener sink #%d" % dst_stream, 10)
+      ]
+  listener_disconnection += analyzer_expect
+  return listener_disconnection
 
-def listener_redundant_connect_seq(test_step, dst, dst_stream):
-    """ This sequence may be due to redundant connect from a random test sequence.
-        Just ensuring that lock is not lost.
-    """
+def listener_redundant_connect_seq(test_step, dst, dst_stream, analyzer_expect):
     if test_step.checkpoint is None:
-      return [NoneOf([Expected(dst, "Media output \d+ lost lock", 2)])]
+      expected = [NoneOf([Expected(dst, "Media output \d+ lost lock", 2)])]
+      expected += analyzer_expect
+      return expected
     else:
-      return []
+      return analyzer_expect
 
-def listener_redundant_disconnect_seq(test_step, dst, dst_stream):
-    """ This sequence may be due to redundant disconnect from a random test sequence.
-        Nothing to test.
-    """
-    return []
+def listener_redundant_disconnect_seq(test_step, dst, dst_stream, analyzer_expect):
+    return analyzer_expect
 
 
 #
