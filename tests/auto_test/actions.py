@@ -27,7 +27,8 @@ def check_set_clock_masters(args, test_step, expected):
       if test_step.do_checks:
         controller_expect = [Expected(args.controller_id, "Success", 5)]
         ep_expect = [Expected(loop_master, "Setting clock source: LOCAL_CLOCK", 5)]
-        expected += [AllOf(controller_expect + ep_expect)]
+        if controller_expect or ep_expect:
+          expected += [AllOf(controller_expect + ep_expect)]
 
 def check_clear_clock_masters(args, test_step, expected):
   for name,ep in endpoints.get_all().iteritems():
@@ -39,7 +40,8 @@ def check_clear_clock_masters(args, test_step, expected):
       if test_step.do_checks:
         controller_expect = [Expected(args.controller_id, "Success", 5)]
         ep_expect = [Expected(ep['name'], "Setting clock source: INPUT_STREAM_DERIVED", 5)]
-        expected += [AllOf(controller_expect + ep_expect)]
+        if controller_expect or ep_expect:
+          expected += [AllOf(controller_expect + ep_expect)]
 
 def controller_connect(args, test_step, expected, src, src_stream, dst, dst_stream):
   talker_ep = endpoints.get(src)
@@ -132,12 +134,12 @@ def action_connect(args, test_step, expected, params_list):
 
   # If there are any nodes in the chain then they must be seen to start forwarding before
   # the listener can be expected to see the stream
-  if forward_enable and (listener_expect or analyzer_expect):
-    listener_expect = [Sequence([AllOf(forward_enable), AllOf(listener_expect + analyzer_expect)])]
+  if forward_enable and listener_expect:
+    listener_expect = [Sequence([AllOf(forward_enable)] + listener_expect)]
   elif forward_enable:
-      listener_expect = [AllOf(forward_enable)]
-  elif listener_expect or analyzer_expect:
-    listener_expect = [AllOf(listener_expect + analyzer_expect)]
+      listener_expect = forward_enable
+  elif listener_expect:
+    listener_expect = listener_expect
   else:
     listener_expect = []
 
@@ -186,12 +188,12 @@ def action_disconnect(args, test_step, expected, params_list):
 
   # If there are any nodes in the chain then the forward disabling is expected before the
   # audio will be seen to be lost
-  if forward_disable and (listener_expect or analyzer_expect):
-    listener_expect = [Sequence([AllOf(forward_disable), AllOf(listener_expect + analyzer_expect)])]
+  if forward_disable and listener_expect:
+    listener_expect = [Sequence([AllOf(forward_disable)] + listener_expect)]
   elif forward_disable:
-    listener_expect = [AllOf(forward_disable)]
-  elif listener_expect or analyzer_expect:
-    listener_expect = [AllOf(listener_expect + analyzer_expect)]
+    listener_expect = forward_disable
+  elif listener_expect:
+    listener_expect = listener_expect
   else:
     listener_expect = []
 
