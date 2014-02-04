@@ -9,6 +9,14 @@ import time
 import datetime
 import dateutil.relativedelta
 
+test_folders = {
+  os.path.join('configs', 'basics') : [1],
+  os.path.join('configs', 'regressions') : [1],
+  os.path.join('configs', 'random_1') : range(1,3),
+  os.path.join('configs', 'random_2') : range(1,3),
+  os.path.join('configs', 'random_3') : range(1,3),
+}
+
 def attr_to_string(obj, attr_name):
   if hasattr(obj, attr_name) and getattr(obj, attr_name) > 0:
     return "%d %s " % (getattr(obj, attr_name), attr_name)
@@ -28,13 +36,12 @@ def print_run_time(start, end):
     attr_to_string(rd, 'minutes'),
     attr_to_string(rd, 'seconds'))
 
-test_folders = {
-  'basics' : [1],
-  'regressions' : [1],
-  'random_1' : range(1,3),
-  'random_2' : range(1,3),
-  'random_3' : range(1,3),
-}
+def purge_folder(folder, pattern):
+  """ Delete files matching pattern from specified folder.
+  """
+  for f in os.listdir(folder):
+    if re.search(pattern, f):
+      os.remove(os.path.join(folder, f))
 
 def run_test(folder, test, seed):
   test_name = test[:-len('.json')]
@@ -45,6 +52,8 @@ def run_test(folder, test, seed):
   logdir = os.path.join(folder, test_name, 'seed_%d' % seed)
   if not os.path.exists(logdir):
     os.makedirs(logdir)
+  else:
+    purge_folder(logdir, 'glitch.*')
 
   t_start = time.time()
   os.system("python test.py --config four.json --logdir %s --summaryfile %s/summary.log --test %s  > %s/test.output 2>&1" %
@@ -80,7 +89,7 @@ def run_folder(folder):
 
 def run_all():
   for folder in sorted(test_folders):
-    run_folder(os.path.join('configs', folder))
+    run_folder(folder)
 
 if len(sys.argv) == 1:
   run_all()
