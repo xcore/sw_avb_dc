@@ -35,7 +35,7 @@ def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
       frequencies as specified in the test configuration file
   """
-  analyzer_startup =  [Expected(a, "connected to .*: %d" % analyzers.get_port(a), 15)
+  analyzer_startup =  [Expected(a, "connected to .*: %d" % analyzers.get_port(a), 15, critical=True)
                         for a in analyzers.get_all()]
   yield master.expect(AllOf(analyzer_startup))
 
