@@ -1,20 +1,22 @@
 #!/usr/bin/python
 
+import datetime
+import dateutil.relativedelta
 import os
+import psutil
 import re
+import shutil
 import subprocess
 import sys
 import time
 
-import datetime
-import dateutil.relativedelta
-
 test_folders = {
   os.path.join('configs', 'basics') : [1],
   os.path.join('configs', 'regressions') : [1],
-  os.path.join('configs', 'random_1') : range(1,3),
-  os.path.join('configs', 'random_2') : range(1,3),
-  os.path.join('configs', 'random_3') : range(1,3),
+  os.path.join('configs', 'random_1') : range(1,4),
+  os.path.join('configs', 'random_2') : range(1,4),
+  os.path.join('configs', 'random_3') : range(1,4),
+  os.path.join('configs', 'random_4') : range(1,4),
 }
 
 def attr_to_string(obj, attr_name):
@@ -24,6 +26,9 @@ def attr_to_string(obj, attr_name):
     return ""
 
 def print_run_time(start, end):
+  """ Print the run time in an easily human-readable form. This means only non-zero units
+      are shown.
+  """
   dt1 = datetime.datetime.fromtimestamp(start)
   dt2 = datetime.datetime.fromtimestamp(end)
   rd = dateutil.relativedelta.relativedelta (dt2, dt1)
@@ -36,45 +41,67 @@ def print_run_time(start, end):
     attr_to_string(rd, 'minutes'),
     attr_to_string(rd, 'seconds'))
 
-def purge_folder(folder, pattern):
-  """ Delete files matching pattern from specified folder.
-  """
-  for f in os.listdir(folder):
-    if re.search(pattern, f):
-      os.remove(os.path.join(folder, f))
+def kill_all(process_name):
+  found = False
+  for proc in psutil.process_iter():
+    if proc.name == process_name and proc.pid not in active_pids:
+      found = True
+      print "Killing %s" % process_name
+      proc.kill()
+  return found
 
 def run_test(folder, test, seed):
-  test_name = test[:-len('.json')]
-  print "---- Running %s : %s - seed %s ----" % (folder, test_name, seed)
+  while True:
+    test_name = test[:-len('.json')]
+    run = 1
+    while True:
+      logdir = os.path.join(folder, test_name, 'seed_%d' % seed, 'run_%d' % run)
+      if not os.path.exists(logdir):
+        break
+      run += 1
 
-  # This was done using subprocess.call, but that fails to work with the
-  # tests using the Twisted framework
-  logdir = os.path.join(folder, test_name, 'seed_%d' % seed)
-  if not os.path.exists(logdir):
+    print "---- Running %s - seed %s run %d ----" % (os.path.join(folder, test_name), seed, run)
     os.makedirs(logdir)
-  else:
-    purge_folder(logdir, 'glitch.*')
 
-  t_start = time.time()
-  os.system("python test.py --config four.json --logdir %s --summaryfile %s/summary.log --test %s  > %s/test.output 2>&1" %
-      (logdir, logdir, os.path.join(folder, test), logdir))
-  t_end = time.time()
+    t_start = time.time()
+    # This was done using subprocess.call, but that fails to work with the
+    # tests using the Twisted framework
+    os.system("python test.py --config four.json --logdir %s --summaryfile %s/summary.log --test %s  > %s/test.output 2>&1" %
+        (logdir, logdir, os.path.join(folder, test), logdir))
+    t_end = time.time()
 
-  errors = 0
-  for file_name in os.listdir(logdir):
-    with open(os.path.join(logdir, file_name)) as f:
+    errors = 0
+    needs_rerun = False
+    with open(os.path.join(logdir, 'summary.log')) as f:
       for line in f.readlines():
-        if re.match("^ERROR", line):
+        if re.match('^ERROR', line):
           errors += 1
+        if re.match('^ERROR:.*xrun: The selected adapter is not connected', line):
+          print "XTAG gone AWOL, giving up"
+          sys.exit(1)
+        if re.match('^ERROR:.*xrun:', line):
+          needs_rerun = True
 
-  print_run_time(t_start, t_end)
-  if errors == 0:
-      print "PASSED"
-  else:
-      print "ERROR: found %d errors" % errors
+    print_run_time(t_start, t_end)
+    if errors == 0:
+        print "PASSED"
+    else:
+        print "ERROR: found %d errors" % errors
 
-  # Give the xrun processes time to die off
-  time.sleep(5)
+    # Give the xrun processes time to die off
+    time.sleep(5)
+
+    # Kill off any remaining processes if they exist
+    found = True
+    while found:
+      found = kill_all('xgdb')
+      if found:
+        time.sleep(2)
+
+    if needs_rerun:
+      print "Found xrun error, re-running test"
+    else:
+      break
 
 def run_folder(folder):
   seeds = test_folders.get(folder, [1])
@@ -91,18 +118,40 @@ def run_all():
   for folder in sorted(test_folders):
     run_folder(folder)
 
-if len(sys.argv) == 1:
-  run_all()
-else:
-  for arg in sys.argv[1:]:
-    if os.path.isdir(os.path.join('configs', arg)):
-      run_folder(os.path.join('configs', arg))
-    elif os.path.exists(arg + '.json'):
-      run_test(os.path.dirname(arg), os.path.basename(arg) + '.json', 1)
-    elif os.path.isdir(arg):
-      run_folder(arg)
-    elif arg.endswith('.json'):
-      run_test(os.path.dirname(arg), os.path.basename(arg), 1)
-    else:
-      print "ERROR: Can't find test '%s'" % arg
+def get_current_pids(process_name):
+  pids = set()
+  for proc in psutil.process_iter():
+    if proc.name == process_name:
+      pids |= set([proc.pid])
+  return pids
+
+if __name__ == "__main__":
+  active_pids = get_current_pids('xgdb')
+
+  if len(sys.argv) == 1:
+    run_all()
+  else:
+    for arg in sys.argv[1:]:
+      if arg == '--clean':
+        print "Cleaning out old runs"
+        for f in os.listdir('configs'):
+          folder = os.path.join('configs', f)
+          if not os.path.isdir(folder):
+            continue
+          for g in os.listdir(folder):
+            subfolder = os.path.join(folder, g)
+            if os.path.isdir(subfolder):
+              print "Removing %s" % subfolder
+              shutil.rmtree(subfolder)
+
+      elif os.path.isdir(os.path.join('configs', arg)):
+        run_folder(os.path.join('configs', arg))
+      elif os.path.exists(arg + '.json'):
+        run_test(os.path.dirname(arg), os.path.basename(arg) + '.json', 1)
+      elif os.path.isdir(arg):
+        run_folder(arg)
+      elif arg.endswith('.json'):
+        run_test(os.path.dirname(arg), os.path.basename(arg), 1)
+      else:
+        print "ERROR: Can't find test '%s'" % arg
 
