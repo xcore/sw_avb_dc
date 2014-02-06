@@ -69,9 +69,9 @@ def startAnalyzerWithDelay(rootDir, master, delay, name, adapter_id, analyzer, a
        target_process, analyzer_process, analyzer['port'], args))
   d.addCallback(startAnalyzer)
 
-def start(rootDir, args, master, analyzers, test_config):
+def start(rootDir, args, master, analyzers, test_config, initial_delay):
   overrides = {}
-  delay = 0
+  delay = initial_delay
 
   # Read any test file specified types
   for name,new_type in test_config.get('types', {}).iteritems():
@@ -99,4 +99,8 @@ def start(rootDir, args, master, analyzers, test_config):
     startAnalyzerWithDelay(rootDir, master, delay, name, user_config['xrun_adapter_id'], analyzer, args)
 
     delay += 1.0
+
+  # Return the delay used so that the next set of processes can be started after these ones
+  # to minimize chances of interference
+  return delay
 

@@ -21,6 +21,7 @@ from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 from actions import *
 import sequences
 import endpoints
+import generators
 import analyzers
 import graph
 
@@ -67,6 +68,28 @@ def configure_analyzers():
     channel_enables = [Expected(name, "Channel %d: enabled" % (int(c) - analyzer_base), 15)
                         for c in analyzer['frequencies'].keys()]
     yield master.expect(AllOf(channel_enables))
+
+def configure_generators():
+  """ Ensure the generators have started properly
+  """
+  generator_startup = [Expected(a, "connected to .*: %d" % generators.get_port(a), 15, critical=True)
+                        for a in generators.get_all()]
+  yield master.expect(AllOf(generator_startup))
+
+  for (name,generator) in generators.get_all().iteritems():
+    log_info("Configure %s" % name)
+
+    # Configure a random mix of unicast, multicast and broadcast traffic
+    master.sendLine(name, "c u 1 64 1500")
+    master.sendLine(name, "c m 1 64 1500")
+    master.sendLine(name, "c b 1 64 1500")
+
+    # Apply the specified config
+    master.sendLine(name, "e")
+
+    # Apply the specified config
+    master.sendLine(name, "p")
+    yield master.expect(Expected(name, "Current configuration", 5))
 
 def ptp_startup_two_port(e, grandmaster, user):
   """ Determine the PTP sequence for the node. If it is not the grandmaster
@@ -130,6 +153,9 @@ def runTest(args):
   """ The test program - needs to yield on each expect and be decorated
     with @inlineCallbacks
   """
+  for y in configure_generators():
+    yield y
+
   for y in configure_analyzers():
     yield y
 
@@ -251,8 +277,9 @@ if __name__ == "__main__":
   # Store the connectivity so that paths between nodes can be determined
   graph.set_connections(config['port_connections'])
 
-  analyzers.start(rootDir, args, master, config['analyzers'], test_config)
-  endpoints.start(rootDir, args, config['endpoints'], master)
+  delay = generators.start(rootDir, args, master, config['generators'], 0)
+  delay = analyzers.start(rootDir, args, master, config['analyzers'], test_config, delay)
+  delay = endpoints.start(rootDir, args, master, config['endpoints'], delay)
 
   # Create a controller process to send AVB commands to
   controller_dir = os.path.join(rootDir, 'appsval_avb', 'controller', 'avb')

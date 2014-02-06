@@ -262,6 +262,20 @@
             }
         }
     ],
+    "generators" : [
+        {
+            "name" : "gen0",
+            "port" : 12350,
+            "users" : {
+                "andy" : {
+                    "xrun_adapter_id": "TBD"
+                },
+                "peter" : {
+                    "xrun_adapter_id": "z8Ncdnfg"
+                }
+            }
+        }
+    ],
     "port_connections" : {
         "c1"        : [ "dc0_0" ],
         "dc0"       : [ "dc0_0", "dc0_1" ],

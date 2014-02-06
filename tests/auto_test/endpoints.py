@@ -1,5 +1,4 @@
 import sys
-import random
 import time
 import os
 
@@ -103,8 +102,8 @@ def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
   reactor.callLater(delay, d.callback, (name, ep, adapter_id, ep_bin, args))
   d.addCallback(startXrun)
 
-def start(rootDir, args, endpoints, master):
-  delay = random.uniform(0, 10)
+def start(rootDir, args, master, endpoints, initial_delay):
+  delay = initial_delay
   for ep in endpoints:
     name = ep['name']
     all_endpoints[name] = ep
@@ -116,7 +115,8 @@ def start(rootDir, args, endpoints, master):
 
     user_config = ep['users'][args.user]
     startXrunWithDelay(rootDir, master, delay, ep['name'], user_config['xrun_adapter_id'], args)
-    delay += random.uniform(0, 10)
+
+    delay += 1.0
 
   # Connect up the analyzers to then endpoints
   for ep in endpoints:
@@ -124,4 +124,8 @@ def start(rootDir, args, endpoints, master):
     if analyzer_name not in analyzers.get_all():
       log_error("Invalid analyzer '%s' for endpoint '%s'" % (analyzer_name, ep['name']))
     ep['analyzer'] = analyzers.get_all()[analyzer_name]
+
+  # Return the delay used so that the next set of processes can be started after these ones
+  # to minimize chances of interference
+  return delay
 
