@@ -53,7 +53,6 @@ def startAnalyzerWithDelay(rootDir, master, delay, name, adapter_id, analyzer, a
   target_process = process.XrunProcess(target_name, master,
       output_file=os.path.join(args.logdir, target_name + '_console.log'))
 
-  ep_bin = os.path.join(rootDir, 'sw_avb_dc', 'app_daisy_chain', 'bin', 'app_daisy_chain.xe')
   if analyzer['type'] == 'audio':
     target_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'app_audio_analyzer_avb', 'bin', 'audio_analyzer.xe')
     analyzer_bin = os.path.join(rootDir, 'sw_audio_analyzer', 'host_audio_analyzer', 'audio_analyzer')
