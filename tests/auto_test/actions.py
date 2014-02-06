@@ -1,14 +1,58 @@
+import random
+
 from xmos.test.process import getEntities, ControllerProcess
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
 from xmos.test.xmos_logging import log_error, log_warning, log_info, log_debug
 
+import analyzers
+import endpoints
+import generators
+import graph
 import sequences
 import state
-import endpoints
-import analyzers
-import graph
+
+def choose_from(group, params, index):
+  if index < len(params):
+    choice = group.get(params[index])
+    if choice is not None:
+      return choice['name']
+
+  choice = random.choice(group.get_all().keys())
+  return choice
+
+def choose_generator(params, index):
+  return choose_from(generators, params, index)
+
+def choose_generator_rate(params, index):
+  try:
+    return int(params[index])
+  except:
+    # Have a 25% chance of disabling the generator (returning 0)
+    mode = random.random()
+    if mode > 0.25:
+      return int(random.random() * 100)
+    else:
+      return 0
+
+def choose_analyzer(params, index):
+  return choose_from(analyzers, params, index)
+
+def choose_src(params, index):
+  return choose_from(endpoints, params, index)
+
+def choose_src_stream(params, index):
+  try:
+    return int(params[index])
+  except:
+    return 0
+
+def choose_dst(params, index):
+  return choose_from(endpoints, params, index)
+
+def choose_dst_stream(params, index):
+  return choose_src_stream(params, index)
 
 def check_set_clock_masters(args, test_step, expected):
   for loop in graph.get_loops(state.get_current()):
@@ -103,7 +147,7 @@ def action_discover(args, test_step, expected, params_list):
   yield args.master.expect(None)
 
 def action_enumerate(args, test_step, expected, params_list):
-  endpoint_name = params_list[0]
+  endpoint_name = choose_src(params_list, 0)
 
   controller_expect = sequences.controller_enumerate_seq(test_step, args.controller_id, endpoint_name)
   controller_enumerate(args, endpoint_name)
@@ -114,10 +158,10 @@ def action_enumerate(args, test_step, expected, params_list):
   yield args.master.expect(None)
 
 def action_connect(args, test_step, expected, params_list):
-  src = params_list[0]
-  src_stream = int(params_list[1])
-  dst = params_list[2]
-  dst_stream = int(params_list[3])
+  src = choose_src(params_list, 0)
+  src_stream = choose_src_stream(params_list, 1)
+  dst = choose_dst(params_list, 2)
+  dst_stream = choose_dst_stream(params_list, 3)
 
   controller_connect(args, test_step, expected, src, src_stream, dst, dst_stream)
 
@@ -168,10 +212,10 @@ def action_connect(args, test_step, expected, params_list):
   yield args.master.expect(None)
 
 def action_disconnect(args, test_step, expected, params_list):
-  src = params_list[0]
-  src_stream = int(params_list[1])
-  dst = params_list[2]
-  dst_stream = int(params_list[3])
+  src = choose_src(params_list, 0)
+  src_stream = choose_src_stream(params_list, 1)
+  dst = choose_dst(params_list, 2)
+  dst_stream = choose_dst_stream(params_list, 3)
 
   controller_disconnect(args, test_step, expected, src, dst_stream, dst, dst_stream)
 
@@ -225,10 +269,10 @@ def action_ping(args, test_step, expected, params_list):
   """ Ping a node with and check that it responds accordingly. This is used to test
       connectivity.
   """
-  node_name = params_list[0]
-  ep = endpoints.get(node_name)
+  ep_name = choose_src(params_list, 0)
+  ep = endpoints.get(ep_name)
 
-  node_expect = [Expected(ep['name'], "IDENTIFY Ping", 5)]
+  node_expect = [Expected(ep_name, "IDENTIFY Ping", 5)]
   controller_expect = [Expected(args.controller_id, "Success", 5)]
 
   args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
@@ -244,7 +288,7 @@ def action_link_downup(args, test_step, expected, params_list):
       is a quick link down/up event. The first argument is the analyzer controlling
       the relay. The second is the time to sleep before restoring the link.
   """
-  analyzer_name = params_list[0]
+  analyzer_name = choose_analyzer(params_list, 0)
   sleep_time = int(params_list[1])
 
   lost = []
@@ -283,7 +327,7 @@ def action_link_downup(args, test_step, expected, params_list):
   yield args.master.expect(None)
 
 def action_link_up(args, test_step, expected, params_list):
-  analyzer_name = params_list[0]
+  analyzer_name = choose_analyzer(params_list, 0)
 
   # Send the command to close the relay '(r)elay (c)lose'
   args.master.sendLine(analyzer_name, "r c")
@@ -293,7 +337,7 @@ def action_link_up(args, test_step, expected, params_list):
   yield base.sleep(0.1)
 
 def action_link_down(args, test_step, expected, params_list):
-  analyzer_name = params_list[0]
+  analyzer_name = choose_analyzer(params_list, 0)
 
   checks = []
   affected_talkers = set()
@@ -361,3 +405,21 @@ def action_continue(args, test_step, expected, params_list):
   """
   yield args.master.expect(None)
 
+def action_generator(args, test_step, expected, params_list):
+  generator_name = choose_generator(params_list, 0)
+  data_rate = choose_generator_rate(params_list, 1)
+
+  if not data_rate:
+    # Set generator to silent mode
+    args.master.sendLine(generator_name, "m s")
+  else:
+    # Set a new data rate
+    args.master.sendLine(generator_name, "r %d" % data_rate)
+
+    # Apply the changed data rate
+    args.master.sendLine(generator_name, "e")
+
+    # Enable the generator
+    args.master.sendLine(generator_name, "m d")
+
+  yield args.master.expect(None)
