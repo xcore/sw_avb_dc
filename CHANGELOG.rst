@@ -5,6 +5,12 @@ sw_avb_dc Change Log
 -----
   * Interim release for production manufacture
 
+  * Changes to dependencies:
+
+    - sc_avb: 6.0.1alpha0 -> 6.0.2alpha0
+
+      + Interim release for production manufacture
+
 1.0.1
 -----
   * Fixed erroneous number of stream formats in stream descriptors
