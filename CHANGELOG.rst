@@ -1,6 +1,10 @@
 sw_avb_dc Change Log
 ====================
 
+1.0.2
+-----
+  * Interim release for production manufacture
+
 1.0.1
 -----
   * Fixed erroneous number of stream formats in stream descriptors
