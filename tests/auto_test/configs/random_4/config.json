@@ -1,0 +1,6 @@
+{ "repeat" : 100,
+  "choice" : [
+    { "command" : "ping", "weight" : 20 },
+    { "command" : "enumerate", "weight" : 10 }
+  ]
+}

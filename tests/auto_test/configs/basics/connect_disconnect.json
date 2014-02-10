@@ -1,5 +1,10 @@
-{ "repeat" : 100,
+{
+  "types" : {
+    "analyzer0" : "qav"
+  },
+  "repeat" : 50,
   "sequence" : [
     { "command" : "connect dc0 0 dc3 0"},
     { "command" : "disconnect dc0 0 dc3 0"}
-]}
+  ]
+}
