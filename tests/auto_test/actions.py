@@ -55,14 +55,15 @@ def choose_dst_stream(params, index):
   return choose_src_stream(params, index)
 
 def check_set_clock_masters(args, test_step, expected):
-  for loop in graph.get_loops(state.get_current()):
+  for loop in graph.get_loops(state.get_next()):
     loop_master = loop[0]
     for ep_name in loop:
-      if state.get_current().is_clock_source_master(ep_name):
+      # Look at the next state in case the node has just been set clock master
+      if state.get_next().is_clock_source_master(ep_name):
         loop_master = ep_name
         break
 
-    if not state.get_current().is_clock_source_master(loop_master):
+    if not state.get_next().is_clock_source_master(loop_master):
       ep = endpoints.get(loop_master)
       args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
             endpoints.guid_in_ascii(args.user, ep)))
