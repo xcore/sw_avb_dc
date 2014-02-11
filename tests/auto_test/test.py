@@ -30,7 +30,12 @@ exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
 
 def print_title(title):
-    log_info("\n%s\n%s\n" % (title, '=' * len(title)))
+  log_info("\n%s\n%s\n" % (title, '=' * len(title)))
+
+def print_comment(test_step):
+  comment = getattr(test_step, 'comment', None)
+  if comment is not None:
+    log_info("\n>> %s\n" % comment)
 
 def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
@@ -175,9 +180,13 @@ def runTest(args):
   test_num = 1
   check_num = 1
   for test_step in test_steps:
+    print_comment(test_step)
     state.move_next_to_current()
 
-    command = test_step.command
+    command = test_step.get_command()
+    if command is None:
+      continue
+
     print_title("Command %d: %s" % (test_num, command))
     test_num += 1
 
