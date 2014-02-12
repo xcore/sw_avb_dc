@@ -169,7 +169,6 @@ def runTest(args):
     yield y
   for e in expected:
     yield args.master.expect(e)
-  expected = []
 
   if not getEntities():
     base.testError("no entities found", critical=True)
@@ -185,19 +184,22 @@ def runTest(args):
 
     action = command.split(' ')
     action_function = eval('action_%s' % action[0])
+    expected = []
     for y in action_function(args, test_step, expected, action[1:]):
       yield y
+    if expected:
+      args.master.addExpected(AllOf(expected))
 
-    if test_step.checkpoint or test_step.checkpoint is None:
+    if (test_step.checkpoint or test_step.checkpoint is None) and args.master.nextExpected:
       print_title("Check: %d" % check_num)
       check_num += 1
-      if expected:
-        yield args.master.expect(AllOf(expected))
-        expected = []
 
-        # Ensure that any remaining output of a previous test step is flushed
-        for process in getActiveProcesses():
-          master.clearExpectHistory(process)
+      args.master.startNext()
+      yield args.master.expect()
+
+      # Ensure that any remaining output of a previous test step is flushed
+      for process in getActiveProcesses():
+        master.clearExpectHistory(process)
 
   # Allow everything time to settle (in case an error is being generated)
   yield base.sleep(5)
