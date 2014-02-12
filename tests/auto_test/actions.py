@@ -13,6 +13,9 @@ import graph
 import sequences
 import state
 
+def print_title(title):
+  log_info("\n%s\n%s\n" % (title, '=' * len(title)))
+
 def choose_from(group, params, index):
   if index < len(params):
     choice = group.get(params[index])
@@ -65,6 +68,7 @@ def check_set_clock_masters(args, test_step, expected):
 
     if not state.get_next().is_clock_source_master(loop_master):
       ep = endpoints.get(loop_master)
+      print_title("Command: set_clock_source_master %s" % loop_master)
       args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
             endpoints.guid_in_ascii(args.user, ep)))
       state.get_next().set_clock_source_master(ep['name'])
@@ -78,6 +82,7 @@ def check_set_clock_masters(args, test_step, expected):
 def check_clear_clock_masters(args, test_step, expected):
   for name,ep in endpoints.get_all().iteritems():
     if state.get_current().is_clock_source_master(name) and not graph.is_in_loop(state.get_current(), ep['name']):
+      print_title("Command: set_clock_source_slave %s" % name)
       args.master.sendLine(args.controller_id, "set_clock_source_slave 0x%s" % (
             endpoints.guid_in_ascii(args.user, ep)))
       state.get_next().set_clock_source_slave(ep['name'])
@@ -95,6 +100,7 @@ def controller_connect(args, test_step, expected, src, src_stream, dst, dst_stre
   state.get_next().connect(src, src_stream, dst, dst_stream)
   check_set_clock_masters(args, test_step, expected)
 
+  print_title("Command: connect %s %d %s %d" % (src, src_stream, dst, dst_stream))
   args.master.sendLine(args.controller_id, "connect 0x%s %d 0x%s %d" % (
         endpoints.guid_in_ascii(args.user, talker_ep), src_stream,
         endpoints.guid_in_ascii(args.user, listener_ep), dst_stream))
@@ -106,12 +112,14 @@ def controller_disconnect(args, test_step, expected, src, src_stream, dst, dst_s
   state.get_next().disconnect(src, src_stream, dst, dst_stream)
   check_clear_clock_masters(args, test_step, expected)
 
+  print_title("Command: disconnect %s %d %s %d" % (src, src_stream, dst, dst_stream))
   args.master.sendLine(args.controller_id, "disconnect 0x%s %d 0x%s %d" % (
         endpoints.guid_in_ascii(args.user, talker_ep), src_stream,
         endpoints.guid_in_ascii(args.user, listener_ep), dst_stream))
 
 def controller_enumerate(args, avb_ep):
   entity_id = endpoints.get(avb_ep)
+  print_title("Command: enumerate %s" % avb_ep)
   args.master.sendLine(args.controller_id, "enumerate 0x%s" % (
         endpoints.guid_in_ascii(args.user, entity_id)))
 
@@ -139,6 +147,7 @@ def get_dual_port_nodes(nodes):
 
 def action_discover(args, test_step, expected, params_list):
   args.master.clearExpectHistory(args.controller_id)
+  print_title("Command: discover")
   args.master.sendLine(args.controller_id, "discover")
   visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
 
@@ -276,7 +285,9 @@ def action_ping(args, test_step, expected, params_list):
   node_expect = [Expected(ep_name, "IDENTIFY Ping", 5)]
   controller_expect = [Expected(args.controller_id, "Success", 5)]
 
+  print_title("Command: identify %s on" % ep_name)
   args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
+  print_title("Command: identify %s off" % ep_name)
   args.master.sendLine(args.controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
 
   if test_step.do_checks and (node_expect or controller_expect):
@@ -386,6 +397,7 @@ def action_check_connections(args, test_step, expected, params_list):
                       endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)),
                       c.listener.dst_stream), 10)]
 
+  print_title("Command: show_connections")
   args.master.sendLine(args.controller_id, "show connections")
 
   if test_step.do_checks:

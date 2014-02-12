@@ -29,9 +29,6 @@ import graph
 exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
 
-def print_title(title):
-  log_info("\n%s\n%s\n" % (title, '=' * len(title)))
-
 def print_comment(test_step):
   comment = getattr(test_step, 'comment', None)
   if comment is not None:
@@ -177,7 +174,6 @@ def runTest(args):
   if not getEntities():
     base.testError("no entities found", critical=True)
 
-  test_num = 1
   check_num = 1
   for test_step in test_steps:
     print_comment(test_step)
@@ -186,9 +182,6 @@ def runTest(args):
     command = test_step.get_command()
     if command is None:
       continue
-
-    print_title("Command %d: %s" % (test_num, command))
-    test_num += 1
 
     action = command.split(' ')
     action_function = eval('action_%s' % action[0])
