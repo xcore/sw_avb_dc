@@ -29,8 +29,10 @@ import graph
 exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
 
-def print_title(title):
-    log_info("\n%s\n%s\n" % (title, '=' * len(title)))
+def print_comment(test_step):
+  comment = getattr(test_step, 'comment', None)
+  if comment is not None:
+    log_info("\n>> %s\n" % comment)
 
 def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
@@ -167,35 +169,37 @@ def runTest(args):
     yield y
   for e in expected:
     yield args.master.expect(e)
-  expected = []
 
   if not getEntities():
     base.testError("no entities found", critical=True)
 
-  test_num = 1
   check_num = 1
   for test_step in test_steps:
+    print_comment(test_step)
     state.move_next_to_current()
 
-    command = test_step.command
-    print_title("Command %d: %s" % (test_num, command))
-    test_num += 1
+    command = test_step.get_command()
+    if command is None:
+      continue
 
     action = command.split(' ')
     action_function = eval('action_%s' % action[0])
+    expected = []
     for y in action_function(args, test_step, expected, action[1:]):
       yield y
+    if expected:
+      args.master.addExpected(AllOf(expected))
 
-    if test_step.checkpoint or test_step.checkpoint is None:
+    if (test_step.checkpoint or test_step.checkpoint is None) and args.master.nextExpected:
       print_title("Check: %d" % check_num)
       check_num += 1
-      if expected:
-        yield args.master.expect(AllOf(expected))
-        expected = []
 
-        # Ensure that any remaining output of a previous test step is flushed
-        for process in getActiveProcesses():
-          master.clearExpectHistory(process)
+      args.master.startNext()
+      yield args.master.expect()
+
+      # Ensure that any remaining output of a previous test step is flushed
+      for process in getActiveProcesses():
+        master.clearExpectHistory(process)
 
   # Allow everything time to settle (in case an error is being generated)
   yield base.sleep(5)

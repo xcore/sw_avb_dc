@@ -49,6 +49,9 @@ def controller_success_connect_seq(test_step, controller_id):
 def controller_listener_exclusive_connect_seq(test_step, controller_id):
     return [Expected(controller_id, "Failed with status LISTENER_EXCLUSIVE", 10)]
 
+def controller_listener_talker_timeout_connect_seq(test_step, controller_id):
+    return [Expected(controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10)]
+
 def controller_timeout_connect_seq(test_step, controller_id):
     return [Expected(controller_id, "Timed out", 10)]
 
@@ -86,6 +89,18 @@ def talker_existing_connect_seq(test_step, user, src, src_stream, dst, dst_strea
         Sequence([Expected(src, "CONNECTING Talker stream #%d \(%s\) -> Listener %s" %
                     (src_stream, stream_id, listener_mac), 10)])
     ]
+  return talker_connection
+
+def talker_self_connect_seq(test_step, user, src, src_stream, dst, dst_stream):
+  """ Even though attempting to connect to self, the talker will become ready. Can
+      only guarantee this message will be printed the first time the talker is
+      activated.
+  """
+  if state.get_current().get_talker_on_count(src):
+    talker_connection = []
+  else:
+    talker_connection = [Expected(src, "Talker stream #%d ready" % src_stream, 10)]
+
   return talker_connection
 
 def talker_all_disconnect_seq(test_step, user, src, src_stream, dst, dst_stream):
