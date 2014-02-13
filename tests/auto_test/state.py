@@ -104,10 +104,16 @@ class State(object):
   def connect(self, src, src_stream, dst, dst_stream):
     """ A connection will occur if the connection doesn't already exist
         and the listener is not in use. There must also be a valid path
-        between the two endpoints.
+        between the two endpoints and the src and dst must be different.
     """
     if (self.connected(src, src_stream, dst, dst_stream) or
         self.listener_active_count(dst, dst_stream)):
+      return
+
+    # If it is a self-connect the talker will still be made ready
+    self.talker_on_count[src] = self.talker_on_count.get(src, 0) + 1
+
+    if src == dst:
       return
 
     path = graph.find_path(self, src, dst)
@@ -118,7 +124,6 @@ class State(object):
     listener = Listener(dst, dst_stream)
     connection = Connection(talker, listener)
 
-    self.talker_on_count[src] = self.talker_on_count.get(src, 0) + 1
     self.active_talkers[talker] = self.active_talkers.get(talker, 0) + 1
     self.active_listeners[listener] = 1 # Listeners can only accept one connection
     self.active_connections[connection] = self.active_connections.get(connection, 0) + 1
@@ -180,7 +185,12 @@ class State(object):
       state = 'talker_redundant'
 
     elif action == 'connect':
-      if self.connected(src, src_stream, dst, dst_stream):
+      if src == dst:
+        if self.listener_active_count(dst, dst_stream):
+          state = 'talker_redundant'
+        else:
+          state = 'talker_self'
+      elif self.connected(src, src_stream, dst, dst_stream):
         state = 'talker_redundant'
       else:
         if self.listener_active_count(dst, dst_stream):
@@ -210,7 +220,7 @@ class State(object):
       state = 'listener_redundant'
 
     elif action == 'connect':
-      if self.listener_active_count(dst, dst_stream):
+      if src == dst or self.listener_active_count(dst, dst_stream):
         state = 'listener_redundant'
       else:
         state = 'listener'
@@ -233,7 +243,12 @@ class State(object):
       state = 'timeout'
 
     elif action == 'connect':
-      if self.connected(src, src_stream, dst, dst_stream):
+      if src == dst:
+        if self.listener_active_count(dst, dst_stream):
+          state = 'listener_exclusive'
+        else:
+          state = 'listener_talker_timeout'
+      elif self.connected(src, src_stream, dst, dst_stream):
         state = 'success'
       elif self.listener_active_count(dst, dst_stream):
         state = 'listener_exclusive'
