@@ -154,7 +154,7 @@ def listener_connect_seq(test_step, dst, dst_stream, analyzer_expect):
               [NoneOf([Expected(dst, "Media output \d+ lost lock", 10)])
            ])]
   else:
-    return listener_connection
+    return [Sequence(listener_connection)]
 
 def listener_disconnect_seq(test_step, dst, dst_stream, analyzer_expect):
   listener_disconnection = [
