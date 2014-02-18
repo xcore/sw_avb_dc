@@ -178,7 +178,7 @@ def action_discover(args, test_step, expected, params_list):
 def action_enumerate(args, test_step, expected, params_list):
   endpoint_name = choose_src(params_list, 0)
 
-  controller_expect = sequences.controller_enumerate_seq(test_step, args.controller_id, endpoint_name)
+  controller_expect = sequences.controller_enumerate_seq(args, test_step, args.controller_id, endpoint_name)
   controller_enumerate(args, endpoint_name)
 
   if test_step.do_checks:
