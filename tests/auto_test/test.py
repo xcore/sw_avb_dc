@@ -1,16 +1,17 @@
-import sys
-import random
-import time
-import json
 import getpass
+import json
 import os
+import random
+import re
+import sys
+import time
 
 from twisted.internet import reactor, defer
 from twisted.internet.defer import inlineCallbacks
 
 from path_setup import *
 
-from xmos.test.process import getEntities, ControllerProcess
+from xmos.test.process import Process
 import xmos.test.master
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
@@ -25,6 +26,52 @@ import generators
 import analyzers
 import graph
 
+""" Global list of all known entities
+"""
+entities = {}
+
+class ControllerProcess(Process):
+  def __init__(self, name, master, controllerType='python', **kwargs):
+    Process.__init__(self, name, master, **kwargs)
+    self.controllerType = controllerType
+    self.discover_active = False
+
+  def outReceived(self, data):
+    if self.controllerType == 'python':
+      m = re.search("Found \d+ entities", data)
+      if m:
+        entities.clear()
+        lines = data.split()
+        for line in lines:
+          if line.startswith("0x"):
+            try:
+              entities[int(line, 16)] = 1
+            except Exception, e:
+              pass
+    else:
+      if self.discover_active:
+        lines = data.split('\n')
+        for line in lines:
+          if not line:
+            self.discover_active = False
+            break
+
+          if line.startswith('C '):
+            try:
+              guid = line.split('|')[2].strip()
+              entities[int(guid, 16)] = 1
+            except Exception, e:
+              pass
+
+      else:
+        m = re.search("End Station  |  Name                  |  Entity GUID         |  MAC", data)
+        if m:
+          self.discover_active = True
+        entities.clear()
+
+    Process.outReceived(self, data)
+
+
 # Assign the xrun variable used to start processes
 exe_name = base.exe_name('xrun')
 xrun = base.file_abspath(exe_name) # Windows requires the absolute path of xrun
@@ -33,6 +80,28 @@ def print_comment(test_step):
   comment = getattr(test_step, 'comment', None)
   if comment is not None:
     log_info("\n>> %s\n" % comment)
+
+def select_eth(expected):
+  args = expected.completionArgs
+  m = re.match("(\d+) \(\w+\)", expected.prevLine)
+  if m:
+    args.master.sendLine(args.controller_id, "%s" % m.group(1))
+    return True
+  else:
+    log_error("Unable to parse controller adapter options output")
+    return False
+
+def configure_controller(args):
+  """ For the c-based controller, select the right interface
+  """
+  if args.controller_type == 'c':
+    controller_startup = [Expected(args.controller_id, "\d \(%s\)" % args.eth_id, 15, critical=True,
+        completionFn=select_eth,
+        completionArgs=args)]
+    yield master.expect(AllOf(controller_startup))
+  else:
+    yield master.expect(None)
+
 
 def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
@@ -155,6 +224,9 @@ def runTest(args):
   """ The test program - needs to yield on each expect and be decorated
     with @inlineCallbacks
   """
+  for y in configure_controller(args):
+    yield y
+
   for y in configure_generators():
     yield y
 
@@ -170,8 +242,9 @@ def runTest(args):
   for e in expected:
     yield args.master.expect(e)
 
-  if not getEntities():
-    base.testError("no entities found", critical=True)
+  visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
+  if len(entities) != len(visible_endpoints):
+    base.testError("Found %d entities, expecting %d" % (len(entities), len(visible_endpoints)), critical=True)
 
   check_num = 1
   for test_step in test_steps:
@@ -245,6 +318,7 @@ if __name__ == "__main__":
   parser.add_argument('--test', nargs='?', help="name of .json test configuration file", required=True)
   parser.add_argument('--logdir', nargs='?', help="folder to write all log files to", default="logs")
   parser.add_argument('--types', nargs='*', help="override the types of devices", default="")
+  parser.add_argument('--controller-type', choices=['c', 'python'], help="controller type", default='c')
   parser.add_argument('-s', '--stop-on-error', action='store_true', help="set errors to be fatal")
   args = parser.parse_args()
 
@@ -258,7 +332,7 @@ if __name__ == "__main__":
       filename=os.path.join(args.logdir, args.logfile),
       summary_filename=args.summaryfile)
 
-  eth_id = get_eth_id(args)
+  args.eth_id = get_eth_id(args)
 
   with open_json(args.config) as f:
     config = json.load(f)
@@ -286,17 +360,27 @@ if __name__ == "__main__":
   delay = endpoints.start(rootDir, args, master, config['endpoints'], delay)
 
   # Create a controller process to send AVB commands to
-  controller_dir = os.path.join(rootDir, 'appsval_avb', 'controller', 'avb')
   controller_id = config['controller']['name']
-  controller = ControllerProcess(controller_id, master,
-      output_file=os.path.join(args.logdir, controller_id + '.log'))
 
   # Put the controller ID into the args structure to be used by the action functions
   args.controller_id = controller_id
 
-  # Call python with unbuffered mode to enable us to see each line as it happens
-  reactor.spawnProcess(controller, sys.executable, [sys.executable, '-u', 'controller.py', '--batch', '--test-mode', '-i', eth_id],
-      env=os.environ, path=controller_dir)
+  if args.controller_type == 'c':
+    controller = ControllerProcess(controller_id, master, controllerType=args.controller_type,
+        output_file=os.path.join(args.logdir, controller_id + '.log'), send_new_line='\n')
+
+    # Call c-based controller
+    controller_bin = os.path.join(rootDir, 'avdecc-lib', 'controller', 'app', 'cmdline', 'avdecccmdline')
+    reactor.spawnProcess(controller, controller_bin, [controller_bin], env=os.environ, path=args.logdir)
+
+  else:
+    controller = ControllerProcess(controller_id, master, controllerType=args.controller_type,
+        output_file=os.path.join(args.logdir, controller_id + '.log'))
+
+    # Call python with unbuffered mode to enable us to see each line as it happens
+    controller_dir = os.path.join(rootDir, 'appsval_avb', 'controller', 'avb')
+    reactor.spawnProcess(controller, sys.executable, [sys.executable, '-u', 'controller.py', '--batch', '--test-mode', '-i', args.eth_id],
+        env=os.environ, path=controller_dir)
 
   base.testStart(runTest, args)
 
