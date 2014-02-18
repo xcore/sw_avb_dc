@@ -97,7 +97,7 @@ def start(rootDir, args, master, analyzers, test_config, initial_delay):
     user_config = analyzer['users'][args.user]
     startAnalyzerWithDelay(rootDir, master, delay, name, user_config['xrun_adapter_id'], analyzer, args)
 
-    delay += 1.0
+    delay += 2.0
 
   # Return the delay used so that the next set of processes can be started after these ones
   # to minimize chances of interference

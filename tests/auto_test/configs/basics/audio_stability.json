@@ -28,12 +28,11 @@
       ]
     },
 
-    { "comment" : "Phase 2: Connect the nodes together in a loop",
+    { "comment" : "Phase 2: Connect the nodes together in a line",
       "sequence" : [
         { "command" : "connect dc0 0 dc1 0", "checkpoint" : false },
         { "command" : "connect dc1 0 dc2 0", "checkpoint" : false },
-        { "command" : "connect dc2 0 dc3 0", "checkpoint" : false },
-        { "command" : "connect dc3 0 dc0 0", "checkpoint" : true }
+        { "command" : "connect dc2 0 dc3 0", "checkpoint" : true }
       ]
     },
 
@@ -52,19 +51,17 @@
 
     { "comment" : "End of Phase 2: Disconnect everything",
       "sequence" : [
-        { "command" : "disconnect dc3 0 dc0 0", "checkpoint" : false },
         { "command" : "disconnect dc2 0 dc3 0", "checkpoint" : false },
         { "command" : "disconnect dc1 0 dc2 0", "checkpoint" : false },
         { "command" : "disconnect dc0 0 dc1 0", "checkpoint" : true }
       ]
     },
 
-    { "comment" : "Phase 3: Connect the nodes together in an overlapping loop",
+    { "comment" : "Phase 3: Connect the nodes together in an overlapping line",
       "sequence" : [
         { "command" : "connect dc0 0 dc3 0", "checkpoint" : false },
         { "command" : "connect dc3 0 dc1 0", "checkpoint" : false },
-        { "command" : "connect dc1 0 dc2 0", "checkpoint" : false },
-        { "command" : "connect dc2 0 dc0 0", "checkpoint" : true }
+        { "command" : "connect dc1 0 dc2 0", "checkpoint" : true }
       ]
     },
 
@@ -85,8 +82,7 @@
       "sequence" : [
         { "command" : "disconnect dc0 0 dc3 0", "checkpoint" : false },
         { "command" : "disconnect dc3 0 dc1 0", "checkpoint" : false },
-        { "command" : "disconnect dc1 0 dc2 0", "checkpoint" : false },
-        { "command" : "disconnect dc2 0 dc0 0", "checkpoint" : true }
+        { "command" : "disconnect dc1 0 dc2 0", "checkpoint" : true }
       ]
     }
 ]}

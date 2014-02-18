@@ -86,8 +86,8 @@ def startXrun(combined_args):
   exe_name = base.exe_name('xrun')
   xrun = base.file_abspath(exe_name)
 
-  log_info("Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', bin])))
-  reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', bin],
+  log_info("Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', '--xscope-file',  name + '.xmt', bin])))
+  reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', '--xscope-file', name + '.xmt', bin],
       env=os.environ, path=args.logdir)
 
 def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
@@ -116,7 +116,7 @@ def start(rootDir, args, master, endpoints, initial_delay):
     user_config = ep['users'][args.user]
     startXrunWithDelay(rootDir, master, delay, ep['name'], user_config['xrun_adapter_id'], args)
 
-    delay += 1.0
+    delay += 2.0
 
   # Connect up the analyzers to then endpoints
   for ep in endpoints:

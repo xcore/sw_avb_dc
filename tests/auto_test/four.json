@@ -7,7 +7,7 @@
             "name": "dc0",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "KzYhXhry",
+                    "xrun_adapter_id": "2CA2fKpH",
                     "avb_id": "2297fffe005279"
                 },
                 "peter" : {
@@ -61,7 +61,7 @@
             "name": "dc1",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "bQcAD5JI",
+                    "xrun_adapter_id": "xYgZa0A9",
                     "avb_id": "2297fffe0052b1"
                 },
                 "peter" : {
@@ -115,7 +115,7 @@
             "name": "dc2",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "biPUlBBX",
+                    "xrun_adapter_id": "TAKtw_n5",
                     "avb_id": "2297fffe0053c0"
                 },
                 "peter" : {
@@ -169,7 +169,7 @@
             "name": "dc3",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "rXDANpz0",
+                    "xrun_adapter_id": "HdPZCSYD",
                     "avb_id": "2297fffe005200"
                 },
                 "peter" : {
@@ -234,7 +234,7 @@
             },
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "nNRsg4lQ"
+                    "xrun_adapter_id": "RIR3drfe"
                 },
                 "peter" : {
                     "xrun_adapter_id": "N3xREyZ2"
@@ -254,7 +254,7 @@
             },
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "w3iRjkYc"
+                    "xrun_adapter_id": "2mzOnGwm"
                 },
                 "peter" : {
                     "xrun_adapter_id": "kHODr4xB"
@@ -268,7 +268,7 @@
             "port" : 12350,
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "TBD"
+                    "xrun_adapter_id": "sxiWirxZ"
                 },
                 "peter" : {
                     "xrun_adapter_id": "z8Ncdnfg"

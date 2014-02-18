@@ -3,5 +3,5 @@
     { "command" : "connect", "weight" : 100 },
     { "command" : "disconnect", "weight" : 100 },
     { "command" : "enumerate", "weight" : 10 },
-    { "command" : "generator", "weight" : 10 }
+    { "command" : "generator r 50", "weight" : 10 }
 ]}
