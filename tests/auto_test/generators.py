@@ -66,7 +66,7 @@ def start(rootDir, args, master, generators, initial_delay):
     user_config = generator['users'][args.user]
     start_generator_with_delay(rootDir, master, delay, name, user_config['xrun_adapter_id'], generator, args)
 
-    delay += 1.0
+    delay += 2.0
 
   # Return the delay used so that the next set of processes can be started after these ones
   # to minimize chances of interference

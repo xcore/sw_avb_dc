@@ -116,7 +116,7 @@ def start(rootDir, args, master, endpoints, initial_delay):
     user_config = ep['users'][args.user]
     startXrunWithDelay(rootDir, master, delay, ep['name'], user_config['xrun_adapter_id'], args)
 
-    delay += 1.0
+    delay += 2.0
 
   # Connect up the analyzers to then endpoints
   for ep in endpoints:
