@@ -181,7 +181,7 @@ int main(void)
 
   // Media control
   chan c_media_ctl[AVB_NUM_MEDIA_UNITS];
-  chan c_media_clock_ctl;
+  interface media_clock_if i_media_clock_ctl;
 
   interface avb_interface i_avb[NUM_AVB_MANAGER_CHANS];
   interface srp_interface i_srp;
@@ -205,7 +205,7 @@ int main(void)
                                     c_mac_tx, NUM_MAC_TX_CHANS);
     }
 
-    on tile[0]: media_clock_server(c_media_clock_ctl,
+    on tile[0]: media_clock_server(i_media_clock_ctl,
                                    null,
                                    c_buf_ctl,
                                    AVB_NUM_LISTENER_UNITS,
@@ -262,7 +262,7 @@ int main(void)
                   c_listener_ctl,
                   c_talker_ctl,
                   c_mac_tx[MAC_TX_TO_AVB_MANAGER],
-                  c_media_clock_ctl,
+                  i_media_clock_ctl,
                   c_ptp[PTP_TO_AVB_MANAGER]);
       avb_srp_task(i_avb[AVB_MANAGER_TO_SRP],
                    i_srp,
