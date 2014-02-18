@@ -86,8 +86,8 @@ def startXrun(combined_args):
   exe_name = base.exe_name('xrun')
   xrun = base.file_abspath(exe_name)
 
-  log_info("Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', bin])))
-  reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', bin],
+  log_info("Starting %s (%s)" % (name, ' '.join(['--adapter-id', adapter_id, '--xscope', '--xscope-file',  name + '.xmt', bin])))
+  reactor.spawnProcess(process, xrun, [xrun, '--adapter-id', adapter_id, '--xscope', '--xscope-file', name + '.xmt', bin],
       env=os.environ, path=args.logdir)
 
 def startXrunWithDelay(rootDir, master, delay, name, adapter_id, args):
