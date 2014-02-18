@@ -1,6 +1,5 @@
 import random
 
-from xmos.test.process import getEntities, ControllerProcess
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
@@ -69,8 +68,14 @@ def check_set_clock_masters(args, test_step, expected):
     if not state.get_next().is_clock_source_master(loop_master):
       ep = endpoints.get(loop_master)
       print_title("Command: set_clock_source_master %s" % loop_master)
-      args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
-            endpoints.guid_in_ascii(args.user, ep)))
+      if args.controller_type == 'python':
+        args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
+              endpoints.guid_in_ascii(args.user, ep)))
+      else:
+        args.master.sendLine(args.controller_id, "select 0x%s" % (
+              endpoints.guid_in_ascii(args.user, ep)))
+        args.master.sendLine(args.controller_id, "set clock_source 0 0 1")
+
       state.get_next().set_clock_source_master(ep['name'])
 
       if test_step.do_checks:
@@ -83,8 +88,14 @@ def check_clear_clock_masters(args, test_step, expected):
   for name,ep in endpoints.get_all().iteritems():
     if state.get_current().is_clock_source_master(name) and not graph.is_in_loop(state.get_current(), ep['name']):
       print_title("Command: set_clock_source_slave %s" % name)
-      args.master.sendLine(args.controller_id, "set_clock_source_slave 0x%s" % (
-            endpoints.guid_in_ascii(args.user, ep)))
+      if args.controller_type == 'python':
+        args.master.sendLine(args.controller_id, "set_clock_source_slave 0x%s" % (
+              endpoints.guid_in_ascii(args.user, ep)))
+      else:
+        args.master.sendLine(args.controller_id, "select 0x%s" % (
+              endpoints.guid_in_ascii(args.user, ep)))
+        args.master.sendLine(args.controller_id, "set clock_source 0 0 0")
+
       state.get_next().set_clock_source_slave(ep['name'])
 
       if test_step.do_checks:
@@ -139,20 +150,28 @@ def get_expected(args, test_step, src, src_stream, dst, dst_stream, command):
 
   controller_state = state.get_current().get_controller_state(args.controller_id,
       src, src_stream, dst, dst_stream, command)
-  controller_expect = sequences.expected_seq(controller_state)(test_step, args.controller_id)
+  controller_expect = sequences.expected_seq(controller_state)(args, test_step, args.controller_id)
   return (talker_expect, listener_expect, controller_expect)
 
 def get_dual_port_nodes(nodes):
   return [node for node in nodes if endpoints.get(node)['ports'] == 2]
 
 def action_discover(args, test_step, expected, params_list):
-  args.master.clearExpectHistory(args.controller_id)
-  print_title("Command: discover")
-  args.master.sendLine(args.controller_id, "discover")
-  visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
+  if args.controller_type == 'c':
+    yield base.sleep(10)
 
-  if test_step.do_checks:
-    expected += [Expected(args.controller_id, "Found %d entities" % len(visible_endpoints), 15)]
+    print_title("Command: list")
+    args.master.sendLine(args.controller_id, "list")
+
+    yield base.sleep(2)
+
+  else:
+    args.master.clearExpectHistory(args.controller_id)
+    print_title("Command: discover")
+    args.master.sendLine(args.controller_id, "discover")
+
+    if test_step.do_checks:
+      expected += [Expected(args.controller_id, "Found \d+ entities", 15)]
 
   yield args.master.expect(None)
 

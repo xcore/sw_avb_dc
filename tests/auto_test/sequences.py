@@ -21,7 +21,7 @@ def expected_seq(name):
 #
 # Controller sequences
 #
-def controller_enumerate_seq(test_step, controller_id, endpoint_name):
+def controller_enumerate_seq(args, test_step, controller_id, endpoint_name):
     """ Build an enumerated sequence for an entity by reading from a topology file
     """
     expected_seq = []
@@ -43,26 +43,32 @@ def controller_enumerate_seq(test_step, controller_id, endpoint_name):
 
     return [Sequence(expected_seq)]
 
-def controller_success_connect_seq(test_step, controller_id):
-    return [Expected(controller_id, "Success", 10)]
+def controller_success_connect_seq(args, test_step, controller_id):
+  if args.controller_type == 'python':
+    return [Expected(controller_id, "Success", 10, consumeOnMatch=True)]
+  else:
+    return [Expected(controller_id, "NOTIFICATION.*CONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
 
-def controller_listener_exclusive_connect_seq(test_step, controller_id):
     return [Expected(controller_id, "Failed with status LISTENER_EXCLUSIVE", 10)]
+def controller_listener_exclusive_connect_seq(args, test_step, controller_id):
 
-def controller_listener_talker_timeout_connect_seq(test_step, controller_id):
     return [Expected(controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10)]
+def controller_listener_talker_timeout_connect_seq(args, test_step, controller_id):
 
-def controller_timeout_connect_seq(test_step, controller_id):
     return [Expected(controller_id, "Timed out", 10)]
+def controller_timeout_connect_seq(args, test_step, controller_id):
 
-def controller_success_disconnect_seq(test_step, controller_id):
-    return [Expected(controller_id, "Success", 10)]
+def controller_success_disconnect_seq(args, test_step, controller_id):
+  if args.controller_type == 'python':
+    return [Expected(controller_id, "Success", 10, consumeOnMatch=True)]
+  else:
+    return [Expected(controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
 
-def controller_redundant_disconnect_seq(test_step, controller_id):
-    return []
+def controller_redundant_disconnect_seq(args, test_step, controller_id):
+  return []
 
-def controller_timeout_disconnect_seq(test_step, controller_id):
     return [Expected(controller_id, "Timed out", 10)]
+def controller_timeout_disconnect_seq(args, test_step, controller_id):
 
 
 #
@@ -255,7 +261,7 @@ def analyzer_listener_connect_seq(test_step, src, src_stream, dst, dst_stream):
     Sequence([Expected(analyzer_name, "Channel %d: Signal detected" % (i + analyzer_offset), 10),
               Expected(analyzer_name, "Channel %d: Frequency %d" % (i + analyzer_offset,
                   analyzers.siggen_frequency(endpoints.get(src), i)),
-                timeout_time=5,
+                timeoutTime=5,
                 completionFn=hook_register_error,
                 completionArgs=(analyzer_name, [
                   "Channel %d: %s" % (i + analyzer_offset, GLITCH_DETECTED_PATTERN),
@@ -276,7 +282,7 @@ def analyzer_listener_disconnect_seq(test_step, src, src_stream, dst, dst_stream
   # Expect both of the stereo channels to lose signal
   signal_lost = [
     Expected(analyzer_name, "Channel %d: Lost signal" % (i + analyzer_offset),
-        timeout_time=5,
+        timeoutTime=5,
         completionFn=hook_unregister_error,
         completionArgs=(analyzer_name, [
           "Channel %d: %s" % (i + analyzer_offset, GLITCH_DETECTED_PATTERN)]))
@@ -315,7 +321,7 @@ def analyzer_qav_seq(test_step, src, dst, action, user):
         completionFn = hook_unregister_error
 
       analyzer_expect += [Expected(analyzer_name, "%s stream 0x%s" % (action_string, stream_string),
-            timeout_time=10,
+            timeoutTime=10,
             completionFn=completionFn,
             completionArgs=(analyzer_name, ['ERROR']))]
 
