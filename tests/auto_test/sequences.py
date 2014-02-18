@@ -28,18 +28,18 @@ def controller_enumerate_seq(args, test_step, controller_id, endpoint_name):
 
     visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), controller_id)
     if endpoint_name not in visible_endpoints:
-      return [Expected(controller_id, "No descriptors found", 10)]
+      return [Expected(controller_id, "No descriptors found", 10, consumeOnMatch=True)]
 
     descriptors = endpoints.get(endpoint_name)['descriptors']
     for dtor in sorted(descriptors.keys()):
         temp_string = "AVB 1722.1 {0} ".format(re.sub('\d*_', '', dtor, 1))
-        expected_seq.append(Expected(controller_id, temp_string, 10))
+        expected_seq.append(Expected(controller_id, temp_string, 10, consumeOnMatch=True))
         for dtor_name in descriptors[str(dtor)].keys():
             temp_string = "object_name\s*=\s*\'{0}\'".format(dtor_name)
-            expected_seq.append(Expected(controller_id, temp_string, 10))
+            expected_seq.append(Expected(controller_id, temp_string, 10, consumeOnMatch=True))
             for element in descriptors[str(dtor)][dtor_name]:
                 temp_string = "{0}\s*=\s*{1}".format(element['item'], element['value'])
-                expected_seq.append(Expected(controller_id, temp_string, 10))
+                expected_seq.append(Expected(controller_id, temp_string, 10, consumeOnMatch=True))
 
     return [Sequence(expected_seq)]
 
@@ -49,14 +49,14 @@ def controller_success_connect_seq(args, test_step, controller_id):
   else:
     return [Expected(controller_id, "NOTIFICATION.*CONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
 
-    return [Expected(controller_id, "Failed with status LISTENER_EXCLUSIVE", 10)]
 def controller_listener_exclusive_connect_seq(args, test_step, controller_id):
+  return [Expected(controller_id, "Failed with status LISTENER_EXCLUSIVE", 10, consumeOnMatch=True)]
 
-    return [Expected(controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10)]
 def controller_listener_talker_timeout_connect_seq(args, test_step, controller_id):
+  return [Expected(controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10, consumeOnMatch=True)]
 
-    return [Expected(controller_id, "Timed out", 10)]
 def controller_timeout_connect_seq(args, test_step, controller_id):
+  return [Expected(controller_id, "Timed out", 10, consumeOnMatch=True)]
 
 def controller_success_disconnect_seq(args, test_step, controller_id):
   if args.controller_type == 'python':
@@ -67,8 +67,8 @@ def controller_success_disconnect_seq(args, test_step, controller_id):
 def controller_redundant_disconnect_seq(args, test_step, controller_id):
   return []
 
-    return [Expected(controller_id, "Timed out", 10)]
 def controller_timeout_disconnect_seq(args, test_step, controller_id):
+  return [Expected(controller_id, "Timed out", 10, consumeOnMatch=True)]
 
 
 #
