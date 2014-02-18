@@ -1,0 +1,30 @@
+{"sequence": [
+
+    { "comment" : "Connect the nodes",
+      "sequence" : [
+        { "command" : "connect dc0 0 dc3 0", "checkpoint" : false },
+        { "command" : "connect dc3 0 dc1 0", "checkpoint" : true }
+      ]
+    },
+
+    {
+      "command" : "sleep 1"
+    },
+    { "comment" : "Continue for another 5 minutes with random traffic",
+      "sequence" : [
+        { "command" : "generator gen0" },
+        { "command" : "sleep 10" }
+      ], "repeat" : 30
+    },
+    { "comment" : "Disable the traffic generator",
+      "command" : "generator gen0 0"
+    },
+
+    { "comment" : "End of Phase 3: Disconnect everything",
+      "sequence" : [
+        { "command" : "disconnect dc0 0 dc3 0", "checkpoint" : false },
+        { "command" : "disconnect dc3 0 dc1 0", "checkpoint" : false },
+        { "command" : "disconnect dc1 0 dc2 0", "checkpoint" : true }
+      ]
+    }
+]}
