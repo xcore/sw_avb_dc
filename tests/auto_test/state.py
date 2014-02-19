@@ -267,6 +267,12 @@ class State(object):
     log_debug("get_controller_state for %s %d %s %d: %s" % (src, src_stream, dst, dst_stream, state))
     return ('controller_' + state + '_' + action)
 
+  def get_clock_source_index(self, node):
+    if self.is_clock_source_master(node):
+      return 1
+    else:
+      return 0
+
   def is_clock_source_master(self, node):
     return self.clock_source_master.get(node, 0)
 

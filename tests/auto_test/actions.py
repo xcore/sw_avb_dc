@@ -1,4 +1,5 @@
 import random
+import re
 
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
@@ -56,6 +57,12 @@ def choose_dst(params, index):
 def choose_dst_stream(params, index):
   return choose_src_stream(params, index)
 
+def select_endpoint(args, endpoint_name):
+  entity = 0
+  configuration = 0
+  args.master.sendLine(args.controller_id, "select 0x%s %d %d" % (
+        endpoints.guid_in_ascii(args.user, endpoint_name), entity, configuration))
+
 def check_set_clock_masters(args, test_step, expected):
   for loop in graph.get_loops(state.get_next()):
     loop_master = loop[0]
@@ -72,14 +79,13 @@ def check_set_clock_masters(args, test_step, expected):
         args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
               endpoints.guid_in_ascii(args.user, ep)))
       else:
-        args.master.sendLine(args.controller_id, "select 0x%s" % (
-              endpoints.guid_in_ascii(args.user, ep)))
+        select_endpoint(args, ep)
         args.master.sendLine(args.controller_id, "set clock_source 0 0 1")
 
       state.get_next().set_clock_source_master(ep['name'])
 
       if test_step.do_checks:
-        controller_expect = [Expected(args.controller_id, "Success", 5)]
+        controller_expect = sequences.expected_seq('controller_success_set_clock_source')(args, test_step)
         ep_expect = [Expected(loop_master, "Setting clock source: LOCAL_CLOCK", 5)]
         if controller_expect or ep_expect:
           expected += [AllOf(controller_expect + ep_expect)]
@@ -92,14 +98,13 @@ def check_clear_clock_masters(args, test_step, expected):
         args.master.sendLine(args.controller_id, "set_clock_source_slave 0x%s" % (
               endpoints.guid_in_ascii(args.user, ep)))
       else:
-        args.master.sendLine(args.controller_id, "select 0x%s" % (
-              endpoints.guid_in_ascii(args.user, ep)))
+        select_endpoint(args, ep)
         args.master.sendLine(args.controller_id, "set clock_source 0 0 0")
 
       state.get_next().set_clock_source_slave(ep['name'])
 
       if test_step.do_checks:
-        controller_expect = [Expected(args.controller_id, "Success", 5)]
+        controller_expect = sequences.expected_seq('controller_success_set_clock_source')(args, test_step)
         ep_expect = [Expected(ep['name'], "Setting clock source: INPUT_STREAM_DERIVED", 5)]
         if controller_expect or ep_expect:
           expected += [AllOf(controller_expect + ep_expect)]
@@ -131,8 +136,17 @@ def controller_disconnect(args, test_step, expected, src, src_stream, dst, dst_s
 def controller_enumerate(args, avb_ep):
   entity_id = endpoints.get(avb_ep)
   print_title("Command: enumerate %s" % avb_ep)
-  args.master.sendLine(args.controller_id, "enumerate 0x%s" % (
-        endpoints.guid_in_ascii(args.user, entity_id)))
+  if args.controller_type == 'python':
+    args.master.sendLine(args.controller_id, "enumerate 0x%s" % (
+          endpoints.guid_in_ascii(args.user, entity_id)))
+  else:
+    select_endpoint(args, entity_id)
+
+    descriptors = endpoints.get(avb_ep)['descriptors']
+    for dtor in sorted(descriptors.keys()):
+      index = 0
+      command = "view descriptor %s %d" % (re.sub('\d*_', '', dtor, 1), index)
+      args.master.sendLine(args.controller_id, command.encode('ascii', 'ignore'))
 
 def get_expected(args, test_step, src, src_stream, dst, dst_stream, command):
   state.get_current().dump()
@@ -150,7 +164,7 @@ def get_expected(args, test_step, src, src_stream, dst, dst_stream, command):
 
   controller_state = state.get_current().get_controller_state(args.controller_id,
       src, src_stream, dst, dst_stream, command)
-  controller_expect = sequences.expected_seq(controller_state)(args, test_step, args.controller_id)
+  controller_expect = sequences.expected_seq(controller_state)(args, test_step)
   return (talker_expect, listener_expect, controller_expect)
 
 def get_dual_port_nodes(nodes):
@@ -178,7 +192,7 @@ def action_discover(args, test_step, expected, params_list):
 def action_enumerate(args, test_step, expected, params_list):
   endpoint_name = choose_src(params_list, 0)
 
-  controller_expect = sequences.controller_enumerate_seq(args, test_step, args.controller_id, endpoint_name)
+  controller_expect = sequences.controller_enumerate_seq(args, test_step, endpoint_name)
   controller_enumerate(args, endpoint_name)
 
   if test_step.do_checks:

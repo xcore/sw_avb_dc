@@ -21,54 +21,87 @@ def expected_seq(name):
 #
 # Controller sequences
 #
-def controller_enumerate_seq(args, test_step, controller_id, endpoint_name):
+def controller_enumerate_seq(args, test_step, endpoint_name):
     """ Build an enumerated sequence for an entity by reading from a topology file
     """
     expected_seq = []
 
-    visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), controller_id)
+    visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
     if endpoint_name not in visible_endpoints:
-      return [Expected(controller_id, "No descriptors found", 10, consumeOnMatch=True)]
+      return [Expected(args.controller_id, "No descriptors found", 10, consumeOnMatch=True)]
 
     descriptors = endpoints.get(endpoint_name)['descriptors']
-    for dtor in sorted(descriptors.keys()):
-        temp_string = "AVB 1722.1 {0} ".format(re.sub('\d*_', '', dtor, 1))
-        expected_seq.append(Expected(controller_id, temp_string, 10, consumeOnMatch=True))
+    if args.controller_type == 'python':
+      for dtor in sorted(descriptors.keys()):
+        # Note that the .* is required because the STREAM_INPUT/STREAM_OUTPUT are mapped to the same descriptor
+        temp_string = "AVB 1722\.1.*%s" % re.sub('\d*_', '', dtor, 1)
+        expected_seq.append(Expected(args.controller_id, temp_string, 10, consumeOnMatch=True))
         for dtor_name in descriptors[str(dtor)].keys():
-            temp_string = "object_name\s*=\s*\'{0}\'".format(dtor_name)
-            expected_seq.append(Expected(controller_id, temp_string, 10, consumeOnMatch=True))
-            for element in descriptors[str(dtor)][dtor_name]:
-                temp_string = "{0}\s*=\s*{1}".format(element['item'], element['value'])
-                expected_seq.append(Expected(controller_id, temp_string, 10, consumeOnMatch=True))
+          temp_string = "object_name\s*=\s*\'%s\'" % dtor_name
+          expected_seq.append(Expected(args.controller_id, temp_string, 10, consumeOnMatch=True))
+          for element in descriptors[str(dtor)][dtor_name]:
+            element_type = element.get('type', 'none')
+            if element_type == 'hex':
+              temp_string = "%s\s*=\s*0x%x" % (element['item'], element['value'])
+            elif element_type == 'state':
+              value = eval('state.get_current().get_%s' % element['item'])(endpoint_name)
+              temp_string = "%s\s*=\s*%s" % (element['item'], value)
+            else:
+              temp_string = "%s\s*=\s*%s" % (element['item'], element['value'])
+            expected_seq.append(Expected(args.controller_id, temp_string, 10, consumeOnMatch=True))
+
+    else:
+      for dtor in sorted(descriptors.keys()):
+        temp_string = "descriptor_type: %s" % re.sub('\d*_', '', dtor, 1)
+        expected_seq.append(Expected(args.controller_id, temp_string, 10, consumeOnMatch=True))
+        for dtor_name in descriptors[str(dtor)].keys():
+          temp_string = "object_name\s*=\s*%s" % dtor_name
+          expected_seq.append(Expected(args.controller_id, temp_string, 10, consumeOnMatch=True))
+          for element in descriptors[str(dtor)][dtor_name]:
+            element_type = element.get('type', 'none')
+            if element_type == 'flag':
+              temp_string = "%s\s*=\s*1" % element['value'].lower()
+            elif element_type == 'state':
+              value = eval('state.get_current().get_%s' % element['item'])(endpoint_name)
+              temp_string = "%s\s*=\s*%s" % (element['item'], value)
+            else:
+              temp_string = "%s\s*=\s*%s" % (element['item'], element['value'])
+            expected_seq.append(Expected(args.controller_id, temp_string, 10, consumeOnMatch=True))
 
     return [Sequence(expected_seq)]
 
-def controller_success_connect_seq(args, test_step, controller_id):
+def controller_success_connect_seq(args, test_step):
   if args.controller_type == 'python':
-    return [Expected(controller_id, "Success", 10, consumeOnMatch=True)]
+    return [Expected(args.controller_id, "Success", 10, consumeOnMatch=True)]
   else:
-    return [Expected(controller_id, "NOTIFICATION.*CONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
+    return [Expected(args.controller_id, "NOTIFICATION.*CONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
 
-def controller_listener_exclusive_connect_seq(args, test_step, controller_id):
-  return [Expected(controller_id, "Failed with status LISTENER_EXCLUSIVE", 10, consumeOnMatch=True)]
-
-def controller_listener_talker_timeout_connect_seq(args, test_step, controller_id):
-  return [Expected(controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10, consumeOnMatch=True)]
-
-def controller_timeout_connect_seq(args, test_step, controller_id):
-  return [Expected(controller_id, "Timed out", 10, consumeOnMatch=True)]
-
-def controller_success_disconnect_seq(args, test_step, controller_id):
+def controller_success_set_clock_source_seq(args, test_step):
   if args.controller_type == 'python':
-    return [Expected(controller_id, "Success", 10, consumeOnMatch=True)]
+    return [Expected(args.controller_id, "Success", 10, consumeOnMatch=True)]
   else:
-    return [Expected(controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
+    return [Expected(args.controller_id, "NOTIFICATION.*SET_CLOCK_SOURCE.*SUCCESS", 10, consumeOnMatch=True)]
 
-def controller_redundant_disconnect_seq(args, test_step, controller_id):
+def controller_listener_exclusive_connect_seq(args, test_step):
+  return [Expected(args.controller_id, "Failed with status LISTENER_EXCLUSIVE", 10, consumeOnMatch=True)]
+
+def controller_listener_talker_timeout_connect_seq(args, test_step):
+  return [Expected(args.controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10, consumeOnMatch=True)]
+
+def controller_timeout_connect_seq(args, test_step):
+  return [Expected(args.controller_id, "Timed out", 10, consumeOnMatch=True)]
+
+def controller_success_disconnect_seq(args, test_step):
+  if args.controller_type == 'python':
+    return [Expected(args.controller_id, "Success", 10, consumeOnMatch=True)]
+  else:
+    return [Expected(args.controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
+
+def controller_redundant_disconnect_seq(args, test_step):
   return []
 
-def controller_timeout_disconnect_seq(args, test_step, controller_id):
-  return [Expected(controller_id, "Timed out", 10, consumeOnMatch=True)]
+def controller_timeout_disconnect_seq(args, test_step):
+  return [Expected(args.controller_id, "Timed out", 10, consumeOnMatch=True)]
 
 
 #
