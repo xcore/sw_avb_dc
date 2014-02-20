@@ -324,12 +324,21 @@ def action_ping(args, test_step, expected, params_list):
   ep = endpoints.get(ep_name)
 
   node_expect = [Expected(ep_name, "IDENTIFY Ping", 5)]
-  controller_expect = [Expected(args.controller_id, "Success", 5)]
 
-  print_title("Command: identify %s on" % ep_name)
-  args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
-  print_title("Command: identify %s off" % ep_name)
-  args.master.sendLine(args.controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
+  if args.controller_type == 'python':
+    controller_expect = [Expected(args.controller_id, "Success", 5)]
+
+    print_title("Command: identify %s on" % ep_name)
+    args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
+    print_title("Command: identify %s off" % ep_name)
+    args.master.sendLine(args.controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
+  else:
+    controller_expect = [Expected(args.controller_id, "NOTIFICATION.*SET_CONTROL.*SUCCESS", 10, consumeOnMatch=True)]
+
+    print_title("Command: identify on %s" % ep_name)
+    args.master.sendLine(args.controller_id, "identify on 0x%s" % endpoints.guid_in_ascii(args.user, ep))
+    print_title("Command: identify off %s" % ep_name)
+    args.master.sendLine(args.controller_id, "identify off 0x%s" % endpoints.guid_in_ascii(args.user, ep))
 
   if test_step.do_checks and (node_expect or controller_expect):
     expected += [AllOf(node_expect + controller_expect)]
