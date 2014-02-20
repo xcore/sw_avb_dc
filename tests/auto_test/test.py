@@ -49,10 +49,16 @@ class ControllerProcess(Process):
             except Exception, e:
               pass
     else:
+      if not self.discover_active:
+        m = re.search("End Station  |  Name                  |  Entity GUID         |  MAC", data)
+        if m:
+          self.discover_active = True
+        entities.clear()
+
       if self.discover_active:
         lines = data.split('\n')
         for line in lines:
-          if not line:
+          if line.startswith('C - End Station'):
             self.discover_active = False
             break
 
@@ -62,12 +68,6 @@ class ControllerProcess(Process):
               entities[int(guid, 16)] = 1
             except Exception, e:
               pass
-
-      else:
-        m = re.search("End Station  |  Name                  |  Entity GUID         |  MAC", data)
-        if m:
-          self.discover_active = True
-        entities.clear()
 
     Process.outReceived(self, data)
 
