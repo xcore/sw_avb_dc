@@ -424,11 +424,18 @@ def action_check_connections(args, test_step, expected, params_list):
   # Expect all connections to be restored
   for c,n in state.get_current().active_connections.iteritems():
     if n:
-      checks += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
-                      endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)),
-                      c.talker.src_stream,
-                      endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)),
-                      c.listener.dst_stream), 10)]
+      if args.controller_type == 'python':
+        checks += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)),
+                        c.talker.src_stream,
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)),
+                        c.listener.dst_stream), 10)]
+      else:
+        checks += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)).zfill(16),
+                        c.talker.src_stream,
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)).zfill(16),
+                        c.listener.dst_stream), 10)]
 
   print_title("Command: show_connections")
   args.master.sendLine(args.controller_id, "show connections")
