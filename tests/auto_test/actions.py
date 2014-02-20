@@ -172,7 +172,8 @@ def get_dual_port_nodes(nodes):
 
 def action_discover(args, test_step, expected, params_list):
   if args.controller_type == 'c':
-    yield base.sleep(10)
+    # Can take up to 20 seconds to timeout entities which have disappeared
+    yield base.sleep(20)
 
     print_title("Command: list")
     args.master.sendLine(args.controller_id, "list")
@@ -184,8 +185,15 @@ def action_discover(args, test_step, expected, params_list):
     print_title("Command: discover")
     args.master.sendLine(args.controller_id, "discover")
 
-    if test_step.do_checks:
-      expected += [Expected(args.controller_id, "Found \d+ entities", 15)]
+    yield args.master.expect(Expected(args.controller_id, "Found \d+ entities", 15))
+
+  # Actually check that the right number of entities have been seen
+  visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
+  controller = getActiveProcesses()[args.controller_id]
+  if len(controller.entities) != len(visible_endpoints):
+    base.testError("Found %d entities, expecting %d" % (len(controller.entities), len(visible_endpoints)), critical=True)
+  else:
+    log_info("Found %d entities" % len(controller.entities))
 
   yield args.master.expect(None)
 

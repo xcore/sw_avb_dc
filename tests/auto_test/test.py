@@ -26,26 +26,23 @@ import generators
 import analyzers
 import graph
 
-""" Global list of all known entities
-"""
-entities = {}
-
 class ControllerProcess(Process):
   def __init__(self, name, master, controllerType='python', **kwargs):
     Process.__init__(self, name, master, **kwargs)
     self.controllerType = controllerType
     self.discover_active = False
+    self.entities = {}
 
   def outReceived(self, data):
     if self.controllerType == 'python':
       m = re.search("Found \d+ entities", data)
       if m:
-        entities.clear()
+        self.entities.clear()
         lines = data.split()
         for line in lines:
           if line.startswith("0x"):
             try:
-              entities[int(line, 16)] = 1
+              self.entities[int(line, 16)] = 1
             except Exception, e:
               pass
     else:
@@ -53,7 +50,7 @@ class ControllerProcess(Process):
         m = re.search("End Station  |  Name                  |  Entity GUID         |  MAC", data)
         if m:
           self.discover_active = True
-        entities.clear()
+        self.entities.clear()
 
       if self.discover_active:
         lines = data.split('\n')
@@ -65,7 +62,7 @@ class ControllerProcess(Process):
           if line.startswith('C '):
             try:
               guid = line.split('|')[2].strip()
-              entities[int(guid, 16)] = 1
+              self.entities[int(guid, 16)] = 1
             except Exception, e:
               pass
 
@@ -214,12 +211,6 @@ def runTest(args):
   expected = []
   for y in action_discover(args, generator.Command("discover"), expected, []):
     yield y
-  for e in expected:
-    yield args.master.expect(e)
-
-  visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
-  if len(entities) != len(visible_endpoints):
-    base.testError("Found %d entities, expecting %d" % (len(entities), len(visible_endpoints)), critical=True)
 
   check_num = 1
   for test_step in test_steps:
