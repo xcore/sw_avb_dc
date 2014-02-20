@@ -81,28 +81,6 @@ def print_comment(test_step):
   if comment is not None:
     log_info("\n>> %s\n" % comment)
 
-def select_eth(expected):
-  args = expected.completionArgs
-  m = re.match("(\d+) \(\w+\)", expected.prevLine)
-  if m:
-    args.master.sendLine(args.controller_id, "%s" % m.group(1))
-    return True
-  else:
-    log_error("Unable to parse controller adapter options output")
-    return False
-
-def configure_controller(args):
-  """ For the c-based controller, select the right interface
-  """
-  if args.controller_type == 'c':
-    controller_startup = [Expected(args.controller_id, "\d \(%s\)" % args.eth_id, 15, critical=True,
-        completionFn=select_eth,
-        completionArgs=args)]
-    yield master.expect(AllOf(controller_startup))
-  else:
-    yield master.expect(None)
-
-
 def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
       frequencies as specified in the test configuration file
@@ -224,9 +202,6 @@ def runTest(args):
   """ The test program - needs to yield on each expect and be decorated
     with @inlineCallbacks
   """
-  for y in configure_controller(args):
-    yield y
-
   for y in configure_generators():
     yield y
 
@@ -371,7 +346,7 @@ if __name__ == "__main__":
 
     # Call c-based controller
     controller_bin = os.path.join(rootDir, 'avdecc-lib', 'controller', 'app', 'cmdline', 'avdecccmdline')
-    reactor.spawnProcess(controller, controller_bin, [controller_bin], env=os.environ, path=args.logdir)
+    reactor.spawnProcess(controller, controller_bin, [controller_bin, '-t', '-i', args.eth_id], env=os.environ, path=args.logdir)
 
   else:
     controller = ControllerProcess(controller_id, master, controllerType=args.controller_type,
