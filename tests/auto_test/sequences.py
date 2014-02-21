@@ -89,7 +89,10 @@ def controller_listener_exclusive_connect_seq(args, test_step):
     return [Expected(args.controller_id, "NOTIFICATION.*CONNECT_RX_RESPONSE.*LISTENER_EXCLUSIVE", 10, consumeOnMatch=True)]
 
 def controller_listener_talker_timeout_connect_seq(args, test_step):
-  return [Expected(args.controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10, consumeOnMatch=True)]
+  if args.controller_type == 'python':
+    return [Expected(args.controller_id, "Failed with status LISTENER_TALKER_TIMEOUT", 10, consumeOnMatch=True)]
+  else:
+    return [Expected(args.controller_id, "NOTIFICATION.*CONNECT_RX_RESPONSE.*LISTENER_TALKER_TIMEOUT", 10, consumeOnMatch=True)]
 
 def controller_timeout_connect_seq(args, test_step):
   return [Expected(args.controller_id, "Timed out", 10, consumeOnMatch=True)]
