@@ -25,13 +25,15 @@ def controller_enumerate_seq(args, test_step, endpoint_name):
     """ Build an enumerated sequence for an entity by reading from a topology file
     """
     expected_seq = []
-
-    visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
-    if endpoint_name not in visible_endpoints:
-      return [Expected(args.controller_id, "No descriptors found", 10, consumeOnMatch=True)]
-
     descriptors = endpoints.get(endpoint_name)['descriptors']
+
     if args.controller_type == 'python':
+      # The python controller reads the descriptors each time. The C controller has
+      # them cached and so can always return the values.
+      visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
+      if endpoint_name not in visible_endpoints:
+        return [Expected(args.controller_id, "No descriptors found", 10, consumeOnMatch=True)]
+
       for dtor in sorted(descriptors.keys()):
         # Note that the .* is required because the STREAM_INPUT/STREAM_OUTPUT are mapped to the same descriptor
         temp_string = "AVB 1722\.1.*%s" % re.sub('\d*_', '', dtor, 1)
