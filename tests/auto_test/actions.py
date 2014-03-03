@@ -1,4 +1,5 @@
 import random
+import re
 
 import xmos.test.base as base
 import xmos.test.xmos_logging as xmos_logging
@@ -56,6 +57,12 @@ def choose_dst(params, index):
 def choose_dst_stream(params, index):
   return choose_src_stream(params, index)
 
+def select_endpoint(args, endpoint_name):
+  entity = 0
+  configuration = 0
+  args.master.sendLine(args.controller_id, "select 0x%s %d %d" % (
+        endpoints.guid_in_ascii(args.user, endpoint_name), entity, configuration))
+
 def check_set_clock_masters(args, test_step, expected):
   for loop in graph.get_loops(state.get_next()):
     loop_master = loop[0]
@@ -72,14 +79,13 @@ def check_set_clock_masters(args, test_step, expected):
         args.master.sendLine(args.controller_id, "set_clock_source_master 0x%s" % (
               endpoints.guid_in_ascii(args.user, ep)))
       else:
-        args.master.sendLine(args.controller_id, "select 0x%s" % (
-              endpoints.guid_in_ascii(args.user, ep)))
+        select_endpoint(args, ep)
         args.master.sendLine(args.controller_id, "set clock_source 0 0 1")
 
       state.get_next().set_clock_source_master(ep['name'])
 
       if test_step.do_checks:
-        controller_expect = [Expected(args.controller_id, "Success", 5)]
+        controller_expect = sequences.expected_seq('controller_success_set_clock_source')(args, test_step)
         ep_expect = [Expected(loop_master, "Setting clock source: LOCAL_CLOCK", 5)]
         if controller_expect or ep_expect:
           expected += [AllOf(controller_expect + ep_expect)]
@@ -92,14 +98,13 @@ def check_clear_clock_masters(args, test_step, expected):
         args.master.sendLine(args.controller_id, "set_clock_source_slave 0x%s" % (
               endpoints.guid_in_ascii(args.user, ep)))
       else:
-        args.master.sendLine(args.controller_id, "select 0x%s" % (
-              endpoints.guid_in_ascii(args.user, ep)))
+        select_endpoint(args, ep)
         args.master.sendLine(args.controller_id, "set clock_source 0 0 0")
 
       state.get_next().set_clock_source_slave(ep['name'])
 
       if test_step.do_checks:
-        controller_expect = [Expected(args.controller_id, "Success", 5)]
+        controller_expect = sequences.expected_seq('controller_success_set_clock_source')(args, test_step)
         ep_expect = [Expected(ep['name'], "Setting clock source: INPUT_STREAM_DERIVED", 5)]
         if controller_expect or ep_expect:
           expected += [AllOf(controller_expect + ep_expect)]
@@ -131,8 +136,17 @@ def controller_disconnect(args, test_step, expected, src, src_stream, dst, dst_s
 def controller_enumerate(args, avb_ep):
   entity_id = endpoints.get(avb_ep)
   print_title("Command: enumerate %s" % avb_ep)
-  args.master.sendLine(args.controller_id, "enumerate 0x%s" % (
-        endpoints.guid_in_ascii(args.user, entity_id)))
+  if args.controller_type == 'python':
+    args.master.sendLine(args.controller_id, "enumerate 0x%s" % (
+          endpoints.guid_in_ascii(args.user, entity_id)))
+  else:
+    select_endpoint(args, entity_id)
+
+    descriptors = endpoints.get(avb_ep)['descriptors']
+    for dtor in sorted(descriptors.keys()):
+      index = 0
+      command = "view descriptor %s %d" % (re.sub('\d*_', '', dtor, 1), index)
+      args.master.sendLine(args.controller_id, command.encode('ascii', 'ignore'))
 
 def get_expected(args, test_step, src, src_stream, dst, dst_stream, command):
   state.get_current().dump()
@@ -150,7 +164,7 @@ def get_expected(args, test_step, src, src_stream, dst, dst_stream, command):
 
   controller_state = state.get_current().get_controller_state(args.controller_id,
       src, src_stream, dst, dst_stream, command)
-  controller_expect = sequences.expected_seq(controller_state)(args, test_step, args.controller_id)
+  controller_expect = sequences.expected_seq(controller_state)(args, test_step)
   return (talker_expect, listener_expect, controller_expect)
 
 def get_dual_port_nodes(nodes):
@@ -158,7 +172,8 @@ def get_dual_port_nodes(nodes):
 
 def action_discover(args, test_step, expected, params_list):
   if args.controller_type == 'c':
-    yield base.sleep(10)
+    # Can take up to 20 seconds to timeout entities which have disappeared
+    yield base.sleep(20)
 
     print_title("Command: list")
     args.master.sendLine(args.controller_id, "list")
@@ -170,15 +185,22 @@ def action_discover(args, test_step, expected, params_list):
     print_title("Command: discover")
     args.master.sendLine(args.controller_id, "discover")
 
-    if test_step.do_checks:
-      expected += [Expected(args.controller_id, "Found \d+ entities", 15)]
+    yield args.master.expect(Expected(args.controller_id, "Found \d+ entities", 15))
+
+  # Actually check that the right number of entities have been seen
+  visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
+  controller = getActiveProcesses()[args.controller_id]
+  if len(controller.entities) != len(visible_endpoints):
+    base.testError("Found %d entities, expecting %d" % (len(controller.entities), len(visible_endpoints)), critical=True)
+  else:
+    log_info("Found %d entities" % len(controller.entities))
 
   yield args.master.expect(None)
 
 def action_enumerate(args, test_step, expected, params_list):
   endpoint_name = choose_src(params_list, 0)
 
-  controller_expect = sequences.controller_enumerate_seq(args, test_step, args.controller_id, endpoint_name)
+  controller_expect = sequences.controller_enumerate_seq(args, test_step, endpoint_name)
   controller_enumerate(args, endpoint_name)
 
   if test_step.do_checks:
@@ -302,12 +324,21 @@ def action_ping(args, test_step, expected, params_list):
   ep = endpoints.get(ep_name)
 
   node_expect = [Expected(ep_name, "IDENTIFY Ping", 5)]
-  controller_expect = [Expected(args.controller_id, "Success", 5)]
 
-  print_title("Command: identify %s on" % ep_name)
-  args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
-  print_title("Command: identify %s off" % ep_name)
-  args.master.sendLine(args.controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
+  if args.controller_type == 'python':
+    controller_expect = [Expected(args.controller_id, "Success", 5)]
+
+    print_title("Command: identify %s on" % ep_name)
+    args.master.sendLine(args.controller_id, "identify 0x%s on" % endpoints.guid_in_ascii(args.user, ep))
+    print_title("Command: identify %s off" % ep_name)
+    args.master.sendLine(args.controller_id, "identify 0x%s off" % endpoints.guid_in_ascii(args.user, ep))
+  else:
+    controller_expect = [Expected(args.controller_id, "NOTIFICATION.*SET_CONTROL.*SUCCESS", 10, consumeOnMatch=True)]
+
+    print_title("Command: identify on %s" % ep_name)
+    args.master.sendLine(args.controller_id, "identify on 0x%s" % endpoints.guid_in_ascii(args.user, ep))
+    print_title("Command: identify off %s" % ep_name)
+    args.master.sendLine(args.controller_id, "identify off 0x%s" % endpoints.guid_in_ascii(args.user, ep))
 
   if test_step.do_checks and (node_expect or controller_expect):
     expected += [AllOf(node_expect + controller_expect)]
@@ -410,11 +441,18 @@ def action_check_connections(args, test_step, expected, params_list):
   # Expect all connections to be restored
   for c,n in state.get_current().active_connections.iteritems():
     if n:
-      checks += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
-                      endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)),
-                      c.talker.src_stream,
-                      endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)),
-                      c.listener.dst_stream), 10)]
+      if args.controller_type == 'python':
+        checks += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)),
+                        c.talker.src_stream,
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)),
+                        c.listener.dst_stream), 10)]
+      else:
+        checks += [Expected(args.controller_id, "0x%s\[%d\] -> 0x%s\[%d\]" % (
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.talker.src)).zfill(16),
+                        c.talker.src_stream,
+                        endpoints.guid_in_ascii(args.user, endpoints.get(c.listener.dst)).zfill(16),
+                        c.listener.dst_stream), 10)]
 
   print_title("Command: show_connections")
   args.master.sendLine(args.controller_id, "show connections")

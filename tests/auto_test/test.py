@@ -26,48 +26,45 @@ import generators
 import analyzers
 import graph
 
-""" Global list of all known entities
-"""
-entities = {}
-
 class ControllerProcess(Process):
   def __init__(self, name, master, controllerType='python', **kwargs):
     Process.__init__(self, name, master, **kwargs)
     self.controllerType = controllerType
     self.discover_active = False
+    self.entities = {}
 
   def outReceived(self, data):
     if self.controllerType == 'python':
       m = re.search("Found \d+ entities", data)
       if m:
-        entities.clear()
+        self.entities.clear()
         lines = data.split()
         for line in lines:
           if line.startswith("0x"):
             try:
-              entities[int(line, 16)] = 1
+              self.entities[int(line, 16)] = 1
             except Exception, e:
               pass
     else:
+      if not self.discover_active:
+        m = re.search("End Station  |  Name                  |  Entity GUID         |  MAC", data)
+        if m:
+          self.discover_active = True
+        self.entities.clear()
+
       if self.discover_active:
         lines = data.split('\n')
         for line in lines:
-          if not line:
+          if line.startswith('C - End Station'):
             self.discover_active = False
             break
 
           if line.startswith('C '):
             try:
               guid = line.split('|')[2].strip()
-              entities[int(guid, 16)] = 1
+              self.entities[int(guid, 16)] = 1
             except Exception, e:
               pass
-
-      else:
-        m = re.search("End Station  |  Name                  |  Entity GUID         |  MAC", data)
-        if m:
-          self.discover_active = True
-        entities.clear()
 
     Process.outReceived(self, data)
 
@@ -80,28 +77,6 @@ def print_comment(test_step):
   comment = getattr(test_step, 'comment', None)
   if comment is not None:
     log_info("\n>> %s\n" % comment)
-
-def select_eth(expected):
-  args = expected.completionArgs
-  m = re.match("(\d+) \(\w+\)", expected.prevLine)
-  if m:
-    args.master.sendLine(args.controller_id, "%s" % m.group(1))
-    return True
-  else:
-    log_error("Unable to parse controller adapter options output")
-    return False
-
-def configure_controller(args):
-  """ For the c-based controller, select the right interface
-  """
-  if args.controller_type == 'c':
-    controller_startup = [Expected(args.controller_id, "\d \(%s\)" % args.eth_id, 15, critical=True,
-        completionFn=select_eth,
-        completionArgs=args)]
-    yield master.expect(AllOf(controller_startup))
-  else:
-    yield master.expect(None)
-
 
 def configure_analyzers():
   """ Ensure the analyzers have started properly and then configure their channel
@@ -224,9 +199,6 @@ def runTest(args):
   """ The test program - needs to yield on each expect and be decorated
     with @inlineCallbacks
   """
-  for y in configure_controller(args):
-    yield y
-
   for y in configure_generators():
     yield y
 
@@ -239,12 +211,6 @@ def runTest(args):
   expected = []
   for y in action_discover(args, generator.Command("discover"), expected, []):
     yield y
-  for e in expected:
-    yield args.master.expect(e)
-
-  visible_endpoints = graph.get_endpoints_connected_to(state.get_current(), args.controller_id)
-  if len(entities) != len(visible_endpoints):
-    base.testError("Found %d entities, expecting %d" % (len(entities), len(visible_endpoints)), critical=True)
 
   check_num = 1
   for test_step in test_steps:
@@ -371,7 +337,7 @@ if __name__ == "__main__":
 
     # Call c-based controller
     controller_bin = os.path.join(rootDir, 'avdecc-lib', 'controller', 'app', 'cmdline', 'avdecccmdline')
-    reactor.spawnProcess(controller, controller_bin, [controller_bin], env=os.environ, path=args.logdir)
+    reactor.spawnProcess(controller, controller_bin, [controller_bin, '-t', '-i', args.eth_id], env=os.environ, path=args.logdir)
 
   else:
     controller = ControllerProcess(controller_id, master, controllerType=args.controller_type,

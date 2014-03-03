@@ -1,8 +1,5 @@
 {
   "sequence" : [
-    { "command" : "link_up analyzer0" },
-    { "command" : "discover" },
     { "command" : "link_down analyzer0" },
-    { "command" : "discover" },
-    { "command" : "link_up analyzer0" }
+    { "command" : "discover" }
 ]}

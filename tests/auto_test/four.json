@@ -32,26 +32,26 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : 48000, "type" : "hex" }
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
                     "Clock Domain": [
-                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_source_index", "value" : 0, "type" : "state" },
                         { "item" : "clock_sources_count", "value" : 2}
                     ]
                 },
                 "4_STREAM_INPUT": {
                     "Input 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 },
-                "5_STREAM_INPUT": {
+                "5_STREAM_OUTPUT": {
                     "Output 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 }
@@ -86,26 +86,26 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : 48000, "type" : "hex" }
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
                     "Clock Domain": [
-                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_source_index", "value" : 0, "type" : "state" },
                         { "item" : "clock_sources_count", "value" : 2}
                     ]
                 },
                 "4_STREAM_INPUT": {
                     "Input 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 },
-                "5_STREAM_INPUT": {
+                "5_STREAM_OUTPUT": {
                     "Output 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 }
@@ -140,26 +140,26 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : 48000, "type" : "hex" }
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
                     "Clock Domain": [
-                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_source_index", "value" : 0, "type" : "state" },
                         { "item" : "clock_sources_count", "value" : 2}
                     ]
                 },
                 "4_STREAM_INPUT": {
                     "Input 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 },
-                "5_STREAM_INPUT": {
+                "5_STREAM_OUTPUT": {
                     "Output 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 }
@@ -194,26 +194,26 @@
                 "2_AUDIO_UNIT": {
                     "Audio Unit 0" : [
                         { "item" : "number_of_stream_output_ports", "value" : 1},
-                        { "item" : "current_sampling_rate", "value" : "0xbb80"}
+                        { "item" : "current_sampling_rate", "value" : 48000, "type" : "hex" }
                     ]
                 },
                 "3_CLOCK_DOMAIN": {
                     "Clock Domain": [
-                        { "item" : "clock_source_index", "value" : 0},
+                        { "item" : "clock_source_index", "value" : 0, "type" : "state" },
                         { "item" : "clock_sources_count", "value" : 2}
                     ]
                 },
                 "4_STREAM_INPUT": {
                     "Input 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 },
-                "5_STREAM_INPUT": {
+                "5_STREAM_OUTPUT": {
                     "Output 0": [
-                        { "item" : "clock_domain_index", "value" : "0x0"},
-                        { "item" : "stream_flags", "value" : "CLASS_A"},
+                        { "item" : "clock_domain_index", "value" : 0, "type" : "hex" },
+                        { "item" : "stream_flags", "value" : "CLASS_A", "type" : "flag" },
                         { "item" : "avb_interface_index", "value" : 0}
                     ]
                 }
