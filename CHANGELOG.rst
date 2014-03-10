@@ -1,15 +1,38 @@
 sw_avb_dc Change Log
 ====================
 
+1.0.3
+-----
+  * Changes to dependencies:
+
+    - sc_i2c: 2.2.0rc0 -> 2.4.0beta1
+
+      + i2c_shared functions now take i2cPorts structure as param (rather than externed). This allows for
+      + module_i2c_simple can now be built with support to send repeated starts and retry reads and writes NACKd by slave
+      + module_i2c_shared added to allow multiple logical cores to safely share a single I2C bus
+      + Removed readreg() function from single_port module since it was not safe
+      + Documentation fixes
+
+    - sc_util: 1.0.3rc0 -> 1.0.4rc0
+
+      + module_logging now compiled at -Os
+      + debug_printf in module_logging uses a buffer to deliver messages unfragmented
+      + Fix thread local storage calculation bug in libtrycatch
+      + Fix debug_printf itoa to work for unsigned values > 0x80000000
+
+    - sc_avb: 6.0.1alpha0 -> 6.0.3beta0
+
+      + Firmware upgrade functionality changed to support START_OPERATION commands to erase the flash
+      + Several SRP bug fixes that would cause long connect/disconnection sequences to fail
+      + Interim release for production manufacture
+
+    - sc_slicekit_support: 1.0.3rc0 -> 1.0.4rc0
+
+      + Fix to the metainfo.
+
 1.0.2
 -----
   * Interim release for production manufacture
-
-  * Changes to dependencies:
-
-    - sc_avb: 6.0.1alpha0 -> 6.0.2alpha0
-
-      + Interim release for production manufacture
 
 1.0.1
 -----
