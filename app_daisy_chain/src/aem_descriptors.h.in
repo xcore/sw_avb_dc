@@ -7,7 +7,7 @@
 
 #define U16(data) (unsigned char)((data) >> 8), (unsigned char)((data) & 0xff)
 #define U32(data) (unsigned char)(((data) >> 24) & 0xff), (unsigned char)(((data) >> 16) & 0xff), (unsigned char)(((data) >> 8 ) & 0xff), (unsigned char)(data)
-#define U64(data) (unsigned char)(((data) >> 56) & 0xff), (unsigned char)(((data) >> 48) & 0xff), (unsigned char)(((data) >> 40 ) & 0xff), (unsigned char)(((data) >> 32 ) & 0xff), U32(data)
+#define U64(data) (unsigned char)(((unsigned long long)(data) >> 56ULL) & 0xff), (unsigned char)(((unsigned long long)(data) >> 48ULL) & 0xff), (unsigned char)(((unsigned long long)(data) >> 40ULL ) & 0xff), (unsigned char)(((unsigned long long)(data) >> 32ULL ) & 0xff), U32(data)
 
 #ifdef AVB_1722_1_AEM_ENABLED
 
