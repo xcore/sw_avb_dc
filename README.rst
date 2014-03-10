@@ -1,7 +1,7 @@
 AVB-DC Software Stack
 .....................
 
-:Latest release: 1.0.2beta0
+:Latest release: 1.0.3beta0
 :Maintainer: ajwlucas
 :Description: AVB-DC specific application software
 
@@ -55,7 +55,7 @@ Required software (dependencies)
   * sc_avb (https://github.com/xcore/sc_avb.git)
   * sc_ethernet (https://github.com/xcore/sc_ethernet.git)
   * sc_i2c (https://github.com/xcore/sc_i2c.git)
-  * sc_slicekit_support (https://github.com/xcore/sc_slicekit_support.git)
+  * sc_slicekit_support (git@github.com:xcore/sc_slicekit_support)
   * sc_otp (https://github.com/xcore/sc_otp.git)
-  * sc_util (git@github.com:xcore/sc_util)
+  * sc_util (git://github.com/xcore/sc_util)
 

@@ -543,12 +543,12 @@ unsigned char desc_strings_0[] =
   ""
 };
 
-unsigned char desc_upgrade_image_memory_object_0[] = 
+unsigned char desc_upgrade_image_memory_object_0[] =
 {
   U16(AEM_MEMORY_OBJECT_TYPE),                /* 0-1 descriptor_type */
-  U16(0),                                     /* 2-3 descriptor_id */  
+  U16(0),                                     /* 2-3 descriptor_id */
   "Firmare Upgrade Image",                    /* 4-67 object_name */
-  U16(AEM_NO_STRING),                         /* 68-69 localized_description */  
+  U16(AEM_NO_STRING),                         /* 68-69 localized_description */
   U16(AEM_MEMORY_OBJECT_TYPE_FIRMWARE_IMAGE), /* 70-71 memory_object_type */
   U16(AEM_ENTITY_TYPE),                       /* 72-73 target_descriptor_type */
   U16(0),                                     /* 74-75 target_descriptor_index */
