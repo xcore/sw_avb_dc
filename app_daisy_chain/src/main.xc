@@ -330,53 +330,46 @@ void application_task(client interface avb_interface avb, server interface avb_1
   {
     select
     {
-      case i_1722_1_entity.get_control_value(unsigned short control_type,
-                                            unsigned short control_index,
+      case i_1722_1_entity.get_control_value(unsigned short control_index,
                                             unsigned short &values_length,
                                             unsigned char values[508]) -> unsigned char return_status:
       {
         return_status = AECP_AEM_STATUS_NO_SUCH_DESCRIPTOR;
 
-        if (control_type == AEM_CONTROL_TYPE)
+        switch (control_index)
         {
-          switch (control_index)
-          {
-            case DESCRIPTOR_INDEX_CONTROL_IDENTIFY:
-                values[0] = aem_identify_control_value;
-                values_length = 1;
-                return_status = AECP_AEM_STATUS_SUCCESS;
-              break;
-          }
+          case DESCRIPTOR_INDEX_CONTROL_IDENTIFY:
+              values[0] = aem_identify_control_value;
+              values_length = 1;
+              return_status = AECP_AEM_STATUS_SUCCESS;
+            break;
         }
 
         break;
       }
 
-      case i_1722_1_entity.set_control_value(unsigned short control_type,
-                                            unsigned short control_index,
+      case i_1722_1_entity.set_control_value(unsigned short control_index,
                                             unsigned short values_length,
                                             unsigned char values[508]) -> unsigned char return_status:
       {
         return_status = AECP_AEM_STATUS_NO_SUCH_DESCRIPTOR;
 
-        if (control_type == AEM_CONTROL_TYPE)
-        {
-          switch (control_index) {
-            case DESCRIPTOR_INDEX_CONTROL_IDENTIFY: {
-              if (values_length == 1) {
-                aem_identify_control_value = values[0];
-                p_leds <: aem_identify_control_value;
-                if (aem_identify_control_value) debug_printf("IDENTIFY Ping\n");
-                return_status = AECP_AEM_STATUS_SUCCESS;
+        switch (control_index) {
+          case DESCRIPTOR_INDEX_CONTROL_IDENTIFY: {
+            if (values_length == 1) {
+              aem_identify_control_value = values[0];
+              p_leds <: aem_identify_control_value;
+              if (aem_identify_control_value) {
+                debug_printf("IDENTIFY Ping\n");
               }
-              else
-              {
-                return_status = AECP_AEM_STATUS_BAD_ARGUMENTS;
-              }
-              break;
+              return_status = AECP_AEM_STATUS_SUCCESS;
             }
+            else
+            {
+              return_status = AECP_AEM_STATUS_BAD_ARGUMENTS;
+            }
+            break;
           }
-
         }
 
 
