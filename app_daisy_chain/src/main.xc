@@ -4,7 +4,7 @@
 #include <string.h>
 #include <xscope.h>
 #include "audio_i2s.h"
-#include "avb_xscope.h"
+#include "spi.h"
 #include "i2c.h"
 #include "avb.h"
 #include "audio_clock_CS2300CP.h"
@@ -43,6 +43,14 @@ on tile[1]: mii_interface_t mii2 = {
   XS1_PORT_1G,
   XS1_PORT_1F,
   XS1_PORT_4B
+};
+
+on tile[0]: fl_spi_ports spi_ports = {
+  PORT_SPI_MISO,
+  PORT_SPI_SS,
+  PORT_SPI_CLK,
+  PORT_SPI_MOSI,
+  XS1_CLKBLK_1
 };
 
 on tile[0]: out port p_leds = XS1_PORT_4F;
@@ -278,7 +286,7 @@ int main(void)
                                         c_mac_rx[MAC_RX_TO_1722_1],
                                         c_mac_tx[MAC_TX_TO_1722_1],
                                         c_ptp[PTP_TO_1722_1]);
-    on tile[0].core[0]: spi_task(i_spi);
+    on tile[0].core[0]: spi_task(i_spi, spi_ports);
 
     on tile[0]: ptp_output_test_clock(c_ptp[PTP_TO_TEST_CLOCK],
                                       ptp_sync_port, 100000000);
