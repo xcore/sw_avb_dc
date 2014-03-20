@@ -110,7 +110,10 @@
 #define AVB_1722_1_ADP_ENTITY_CAPABILITIES (AVB_1722_1_ADP_ENTITY_CAPABILITIES_AEM_SUPPORTED| \
                                             AVB_1722_1_ADP_ENTITY_CAPABILITIES_CLASS_A_SUPPORTED| \
                                             AVB_1722_1_ADP_ENTITY_CAPABILITIES_GPTP_SUPPORTED| \
+                                            AVB_1722_1_ADP_ENTITY_CAPABILITIES_EFU_MODE| \
+                                            AVB_1722_1_ADP_ENTITY_CAPABILITIES_ADDRESS_ACCESS_SUPPORTED| \
                                             AVB_1722_1_ADP_ENTITY_CAPABILITIES_AEM_IDENTIFY_CONTROL_INDEX_VALID)
+
 enum aem_control_indices {
     DESCRIPTOR_INDEX_CONTROL_IDENTIFY = 0,
 };
