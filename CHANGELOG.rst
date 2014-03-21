@@ -1,6 +1,10 @@
 sw_avb_dc Change Log
 ====================
 
+1.0.4
+-----
+  * Bug fix to CONFIGURATION descriptor descriptor_counts_count field which was 1 small
+
 1.0.3
 -----
   * Changes to dependencies:
