@@ -1,7 +1,7 @@
 AVB-DC Software Stack
 .....................
 
-:Latest release: 1.0.3beta0
+:Latest release: 1.0.4beta0
 :Maintainer: ajwlucas
 :Description: AVB-DC specific application software
 
