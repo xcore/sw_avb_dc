@@ -7,7 +7,6 @@
 #include "spi.h"
 #include "i2c.h"
 #include "avb.h"
-#include "audio_clock_CS2300CP.h"
 #include "audio_clock_CS2100CP.h"
 #include "audio_codec_CS4270.h"
 #include "debug_print.h"
@@ -87,9 +86,6 @@ on tile[0]: in buffered port:32 p_aud_din[AVB_DEMO_NUM_CHANNELS/2] = PORT_SDATA_
 #if AVB_XA_SK_AUDIO_PLL_SLICE
 on tile[0]: out port p_audio_shared = PORT_AUDIO_SHARED;
 #endif
-
-// PTP sync port
-on tile[0]: port ptp_sync_port = XS1_PORT_1G;
 
 #if AVB_DEMO_ENABLE_LISTENER
 media_output_fifo_data_t ofifo_data[AVB_NUM_MEDIA_OUTPUTS];
@@ -287,10 +283,6 @@ int main(void)
                                         c_mac_tx[MAC_TX_TO_1722_1],
                                         c_ptp[PTP_TO_1722_1]);
     on tile[0].core[0]: spi_task(i_spi, spi_ports);
-
-    on tile[0]: ptp_output_test_clock(c_ptp[PTP_TO_TEST_CLOCK],
-                                      ptp_sync_port, 100000000);
-
   }
 
     return 0;
