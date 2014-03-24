@@ -5,6 +5,17 @@ sw_avb_dc Change Log
 -----
   * Bug fix to CONFIGURATION descriptor descriptor_counts_count field which was 1 small
 
+  * Changes to dependencies:
+
+    - sc_avb: 6.0.3beta0 -> 6.0.5beta0
+
+      + Bug fix to prevent compile error when Talker is disabled
+      + Update to 1722 MAAP to fix non-compliance issue on conflict check
+      + Updates design guide documentation to include AVB-DC details
+      + SPI task updated to take a structure with ports
+      + Bug fix on cd length of acquire command response
+      + Added EFU mode and address access flags to ADP capabilities
+
 1.0.3
 -----
   * Changes to dependencies:
