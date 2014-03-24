@@ -10,12 +10,10 @@ Key Features
 ============
 
 * Up to 4in/4out I2S audio channels
-* Single stream support only
-* 48 kHz sample rate only
 * Support for 2 daisy-chained boards to a third Talker/Listener
 * 1722 Talker and Listener (simultaneous) support
 * 1722 MAAP support for Talkers
-* 802.1Q MRP, MMRP, MVRP, SRP protocols
+* 802.1Q MRP, MVRP, SRP protocols
 * gPTP server and protocol
 * Media clock recovery and interface to PLL clock source
 * Support for 1722.1 AVDECC: ADP, AECP (AEM) and ACMP
@@ -39,8 +37,6 @@ Known Issues
   which may may cause interoperability issues with non-compliant AVB bridges. This workaround can be disabled at the following
   line in module_gptp/src/gptp_config.h:
   *#define PTP_THROW_AWAY_SYNC_OUTLIERS 0*
-* OS X device aggregation occasionally zeros incorrect streams when one device is disconnected from the aggregate of multi-output device.
-* PTP Announce messages may have an incorrect Path Trace TLV with nodes appearing twice in the trace.
 * SRP interoperability issues have been observed with Broadcom Hawkeye 53324 bridge reference designs running firmware v6.0.0.0. This
   may result in stream reservations not succeeding. 
 
