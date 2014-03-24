@@ -1,0 +1,3 @@
+DOXYGEN_DIRS=../../sc_avb/module_avb ../../sc_avb/module_avb_media_clock ../../sc_avb/module_gptp ../../sc_avb/module_avb_1722  ../../sc_avb/module_avb_audio  ../../sc_avb/module_avb_1722_maap  ../../sc_avb/module_avb_srp ../../sc_avb/module_avb_1722_1 ../../sc_avb/module_avb_flash ../app_daisy_chain
+SOURCE_INCLUDE_DIRS=../../sc_avb/module_avb ../../sc_avb/module_avb_media_clock ../../sc_avb/module_gptp ../../sc_avb/module_avb_1722  ../../sc_avb/module_avb_audio  ../../sc_avb/module_avb_1722_maap  ../../sc_avb/module_avb_srp ../../sc_avb/module_avb_1722_1 ../../sc_avb/module_avb_flash ../app_daisy_chain
+OTHER_DOC_DIRS=../../sc_avb/doc

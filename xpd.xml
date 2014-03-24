@@ -63,6 +63,7 @@
     </dependency>
     <description>AVB-DC specific application software</description>
     <exclude_dir>tests</exclude_dir>
+    <docdir>doc</docdir>
     <location>https://github.com/xcore/sw_avb_dc.git</location>
     <name>sw_avb_dc</name>
     <maintainer>ajwlucas</maintainer>
