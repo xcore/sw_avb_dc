@@ -106,7 +106,10 @@ def controller_success_disconnect_seq(args, test_step):
     return [Expected(args.controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
 
 def controller_redundant_disconnect_seq(args, test_step):
-  return []
+  if args.controller_type == 'python':
+    return []
+  else:
+    return [Expected(args.controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*NOT_CONNECTED", 10, consumeOnMatch=True)]
 
 def controller_timeout_disconnect_seq(args, test_step):
   return [Expected(args.controller_id, "Timed out", 10, consumeOnMatch=True)]
