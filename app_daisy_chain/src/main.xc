@@ -7,7 +7,6 @@
 #include "spi.h"
 #include "i2c.h"
 #include "avb.h"
-#include "audio_clock_CS2300CP.h"
 #include "audio_clock_CS2100CP.h"
 #include "audio_codec_CS4270.h"
 #include "debug_print.h"
@@ -88,9 +87,6 @@ on tile[0]: in buffered port:32 p_aud_din[AVB_DEMO_NUM_CHANNELS/2] = PORT_SDATA_
 on tile[0]: out port p_audio_shared = PORT_AUDIO_SHARED;
 #endif
 
-// PTP sync port
-on tile[0]: port ptp_sync_port = XS1_PORT_1G;
-
 #if AVB_DEMO_ENABLE_LISTENER
 media_output_fifo_data_t ofifo_data[AVB_NUM_MEDIA_OUTPUTS];
 media_output_fifo_t ofifos[AVB_NUM_MEDIA_OUTPUTS];
@@ -115,8 +111,10 @@ media_input_fifo_t ififos[AVB_NUM_MEDIA_INPUTS];
   audio_clock_CS2300CP_init(r_i2c, MASTER_TO_WORDCLOCK_RATIO);
 #endif
 #if AVB_XA_SK_AUDIO_PLL_SLICE
-  audio_codec_CS4270_init(p_audio_shared, 0xff, 0x48, r_i2c);
-  audio_codec_CS4270_init(p_audio_shared, 0xff, 0x49, r_i2c);
+  const int codec1_addr = 0x48;
+  const int codec2_addr = 0x49;
+  audio_codec_CS4270_init(p_audio_shared, 0xff, codec1_addr, r_i2c);
+  audio_codec_CS4270_init(p_audio_shared, 0xff, codec2_addr, r_i2c);
 #endif
 
   while (1) {
@@ -159,7 +157,6 @@ enum ptp_chans {
   PTP_TO_TALKER,
 #endif
   PTP_TO_1722_1,
-  PTP_TO_TEST_CLOCK,
   NUM_PTP_CHANS
 };
 
@@ -287,10 +284,6 @@ int main(void)
                                         c_mac_tx[MAC_TX_TO_1722_1],
                                         c_ptp[PTP_TO_1722_1]);
     on tile[0].core[0]: spi_task(i_spi, spi_ports);
-
-    on tile[0]: ptp_output_test_clock(c_ptp[PTP_TO_TEST_CLOCK],
-                                      ptp_sync_port, 100000000);
-
   }
 
     return 0;
@@ -304,12 +297,12 @@ void application_task(client interface avb_interface avb, server interface avb_1
   const int channels_per_stream = AVB_NUM_MEDIA_INPUTS/AVB_NUM_SOURCES;
   int map[AVB_NUM_MEDIA_INPUTS/AVB_NUM_SOURCES];
 #endif
-  unsigned sample_rate = 48000;
+  const unsigned default_sample_rate = 48000;
   unsigned char aem_identify_control_value = 0;
 
   // Initialize the media clock
   avb.set_device_media_clock_type(0, DEVICE_MEDIA_CLOCK_INPUT_STREAM_DERIVED);
-  avb.set_device_media_clock_rate(0, sample_rate);
+  avb.set_device_media_clock_rate(0, default_sample_rate);
   avb.set_device_media_clock_state(0, DEVICE_MEDIA_CLOCK_STATE_ENABLED);
 
 #if AVB_DEMO_ENABLE_TALKER
@@ -319,12 +312,12 @@ void application_task(client interface avb_interface avb, server interface avb_1
     for (int i = 0; i < channels_per_stream; i++)
       map[i] = j ? j*(channels_per_stream)+i  : j+i;
     avb.set_source_map(j, map, channels_per_stream);
-    avb.set_source_format(j, AVB_SOURCE_FORMAT_MBLA_24BIT, sample_rate);
+    avb.set_source_format(j, AVB_SOURCE_FORMAT_MBLA_24BIT, default_sample_rate);
     avb.set_source_sync(j, 0); // use the media_clock defined above
   }
 #endif
 
-  avb.set_sink_format(0, AVB_SOURCE_FORMAT_MBLA_24BIT, sample_rate);
+  avb.set_sink_format(0, AVB_SOURCE_FORMAT_MBLA_24BIT, default_sample_rate);
 
   while (1)
   {
@@ -332,7 +325,7 @@ void application_task(client interface avb_interface avb, server interface avb_1
     {
       case i_1722_1_entity.get_control_value(unsigned short control_index,
                                             unsigned short &values_length,
-                                            unsigned char values[508]) -> unsigned char return_status:
+                                            unsigned char values[AEM_MAX_CONTROL_VALUES_LENGTH_BYTES]) -> unsigned char return_status:
       {
         return_status = AECP_AEM_STATUS_NO_SUCH_DESCRIPTOR;
 
@@ -350,7 +343,7 @@ void application_task(client interface avb_interface avb, server interface avb_1
 
       case i_1722_1_entity.set_control_value(unsigned short control_index,
                                             unsigned short values_length,
-                                            unsigned char values[508]) -> unsigned char return_status:
+                                            unsigned char values[AEM_MAX_CONTROL_VALUES_LENGTH_BYTES]) -> unsigned char return_status:
       {
         return_status = AECP_AEM_STATUS_NO_SUCH_DESCRIPTOR;
 
