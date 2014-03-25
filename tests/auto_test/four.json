@@ -26,7 +26,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -80,7 +80,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -134,7 +134,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -188,7 +188,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
