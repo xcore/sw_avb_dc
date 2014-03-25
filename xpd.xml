@@ -39,9 +39,9 @@
     </dependency>
     <dependency repo = "sc_avb">
         <gitbranch>master</gitbranch>
-        <githash>346c8d71daccda299da963169e97990786746898</githash>
+        <githash>420392857e5332928803389296b12ce355177c37</githash>
         <uri>https://github.com/xcore/sc_avb.git</uri>
-        <version>6.0.5beta2</version>
+        <version>6.0.5rc0</version>
     </dependency>
     <dependency repo = "sc_util">
         <gitbranch>(detached from f09fda1)</gitbranch>
@@ -56,10 +56,10 @@
         <version>1.0.4rc0</version>
     </dependency>
     <dependency repo = "sc_ethernet">
-        <gitbranch>(detached from 0365a8e)</gitbranch>
-        <githash>0365a8e78f428bea6a0e6ad707f50bd924f272a1</githash>
+        <gitbranch>master</gitbranch>
+        <githash>f5237f680241ff037c459b66a747b82bec9190b3</githash>
         <uri>https://github.com/xcore/sc_ethernet.git</uri>
-        <version>2.3.0beta1</version>
+        <version>2.3.0rc0</version>
     </dependency>
     <description>AVB-DC specific application software</description>
     <docdir>doc</docdir>
@@ -76,7 +76,7 @@
     <release parenthash = "cc35ae5bc5521b9e52557ba42f465381fb46fdbd" version = "1.0.3beta0" githash = "542b8d719a72daa7bf1cad08a64653122e6325d0"></release>
     <release parenthash = "608845baa557c9b953df71b8131931e7f172aef1" version = "1.0.4beta0" githash = "78e884153d395778e97cbd27c5161b92a8abde14"></release>
     <release parenthash = "235c3a1b345bfc28532d4eeceb3713a8a4277177" version = "1.0.4beta1" githash = "ee120b5cf9f60f393b52c062d3fee7b169e654f9"></release>
-    <release parenthash = "696dfecb45194526544e56959df7237a7d5b7dd2" version = "1.0.4beta2"></release>
+    <release parenthash = "696dfecb45194526544e56959df7237a7d5b7dd2" version = "1.0.4beta2" githash = "40d68798fac0fce97877247738acd489112c2cb7"></release>
     <subpartnumber>XM-004457-SM</subpartnumber>
     <vendor>XMOS</vendor>
     <version_defines>
