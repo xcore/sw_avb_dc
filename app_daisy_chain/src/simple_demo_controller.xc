@@ -11,6 +11,7 @@
 #include "avb_1722_1_common.h"
 #include "avb_1722_1_acmp.h"
 #include "avb_1722_1_adp.h"
+#include "avb_1722_1_app_hooks.h"
 #endif
 
 #if AVB_ENABLE_1722_1
@@ -57,111 +58,51 @@ void avb_entity_on_new_entity_available(client interface avb_interface avb, cons
   }
 }
 
-void avb_talker_on_listener_connect_failed(client interface avb_interface avb, const_guid_ref_t my_guid, int source_num,
-        const_guid_ref_t listener_guid, avb_1722_1_acmp_status_t status, chanend c_tx)
-{
-}
-
 /* The controller has indicated that a listener is connecting to this talker stream */
 void avb_talker_on_listener_connect(client interface avb_interface avb, int source_num, const_guid_ref_t listener_guid)
 {
-  unsigned stream_id[2];
-  enum avb_source_state_t state;
-  avb.get_source_state(source_num, state);
-  avb.get_source_id(source_num, stream_id);
+  avb_talker_on_listener_connect_default(avb, source_num, listener_guid);
+}
 
-  debug_printf("CONNECTING Talker stream #%d (%x%x) -> Listener %x:%x:%x:%x:%x:%x:%x:%x\n", source_num, stream_id[0], stream_id[1],
-                                                                                              listener_guid.c[7],
-                                                                                              listener_guid.c[6],
-                                                                                              listener_guid.c[5],
-                                                                                              listener_guid.c[4],
-                                                                                              listener_guid.c[3],
-                                                                                              listener_guid.c[2],
-                                                                                              listener_guid.c[1],
-                                                                                              listener_guid.c[0]);
-
-  // If this is the first listener to connect to this talker stream, we do a stream registration
-  // to reserve the necessary bandwidth on the network
-  if (state == AVB_SOURCE_STATE_DISABLED)
-  {
-    avb_1722_1_talker_set_stream_id(source_num, stream_id);
-
-    avb.set_source_state(source_num, AVB_SOURCE_STATE_POTENTIAL);
-  }
+void avb_talker_on_listener_connect_failed(client interface avb_interface avb, const_guid_ref_t my_guid, int source_num,
+        const_guid_ref_t listener_guid, avb_1722_1_acmp_status_t status, chanend c_tx)
+{
+  avb_talker_on_listener_connect_failed_default(avb, my_guid, source_num, listener_guid, status, c_tx);
 }
 
 /* The controller has indicated to connect this listener sink to a talker stream */
-avb_1722_1_acmp_status_t avb_listener_on_talker_connect(client interface avb_interface avb, int sink_num, const_guid_ref_t talker_guid, unsigned char dest_addr[6], unsigned int stream_id[2], const_guid_ref_t my_guid)
+avb_1722_1_acmp_status_t avb_listener_on_talker_connect(client interface avb_interface avb,
+                                                        int sink_num,
+                                                        const_guid_ref_t talker_guid,
+                                                        unsigned char dest_addr[6],
+                                                        unsigned int stream_id[2],
+                                                        const_guid_ref_t my_guid)
 {
-  const int channels_per_stream = AVB_NUM_MEDIA_OUTPUTS/AVB_NUM_SINKS;
-  int map[AVB_NUM_MEDIA_OUTPUTS/AVB_NUM_SINKS];
-  for (int i = 0; i < channels_per_stream; i++) map[i] = sink_num ? sink_num*channels_per_stream+i  : sink_num+i;
-
-  debug_printf("CONNECTING Listener sink #%d -> Talker stream %x%x, DA: %x:%x:%x:%x:%x:%x\n", sink_num, stream_id[0], stream_id[1],
-                                                                                              dest_addr[0], dest_addr[1], dest_addr[2],
-                                                                                              dest_addr[3], dest_addr[4], dest_addr[5]);
-
-  avb.set_sink_sync(sink_num, 0);
-  avb.set_sink_channels(sink_num, channels_per_stream);
-  avb.set_sink_map(sink_num, map, channels_per_stream);
-  avb.set_sink_id(sink_num, stream_id);
-  avb.set_sink_addr(sink_num, dest_addr, 6);
-
-  avb.set_sink_state(sink_num, AVB_SINK_STATE_POTENTIAL);
-  return ACMP_STATUS_SUCCESS;
+  return avb_listener_on_talker_connect_default(avb, sink_num, talker_guid, dest_addr, stream_id, my_guid);
 }
 
 /* The controller has indicated to disconnect this listener sink from a talker stream */
-void avb_listener_on_talker_disconnect(client interface avb_interface avb, int sink_num, const_guid_ref_t talker_guid, unsigned char dest_addr[6], unsigned int stream_id[2], const_guid_ref_t my_guid)
+void avb_listener_on_talker_disconnect(client interface avb_interface avb,
+                                       int sink_num,
+                                       const_guid_ref_t talker_guid,
+                                       unsigned char dest_addr[6],
+                                       unsigned int stream_id[2],
+                                       const_guid_ref_t my_guid)
 {
-  debug_printf("DISCONNECTING Listener sink #%d -> Talker stream %x%x, DA: %x:%x:%x:%x:%x:%x\n", sink_num, stream_id[0], stream_id[1],
-                                                                                              dest_addr[0], dest_addr[1], dest_addr[2],
-                                                                                              dest_addr[3], dest_addr[4], dest_addr[5]);
-
-  avb.set_sink_state(sink_num, AVB_SINK_STATE_DISABLED);
+  avb_listener_on_talker_disconnect_default(avb, sink_num, talker_guid, dest_addr, stream_id, my_guid);
 }
 
 /* The controller has indicated that a listener is disconnecting from this talker stream */
-void avb_talker_on_listener_disconnect(client interface avb_interface avb, int source_num, const_guid_ref_t listener_guid, int connection_count)
+void avb_talker_on_listener_disconnect(client interface avb_interface avb,
+                                       int source_num,
+                                       const_guid_ref_t listener_guid,
+                                       int connection_count)
 {
-  unsigned stream_id[2];
-  enum avb_source_state_t state;
-  avb.get_source_state(source_num, state);
-  avb.get_source_id(source_num, stream_id);
-
-  debug_printf("DISCONNECTING Talker stream #%d (%x%x) -> Listener %x:%x:%x:%x:%x:%x:%x:%x\n", source_num, stream_id[0], stream_id[1],
-                                                                                              listener_guid.c[7],
-                                                                                              listener_guid.c[6],
-                                                                                              listener_guid.c[5],
-                                                                                              listener_guid.c[4],
-                                                                                              listener_guid.c[3],
-                                                                                              listener_guid.c[2],
-                                                                                              listener_guid.c[1],
-                                                                                              listener_guid.c[0]);
-
-  if ((state > AVB_SOURCE_STATE_DISABLED) && (connection_count == 0))
-  {
-    avb.set_source_state(source_num, AVB_SOURCE_STATE_DISABLED);
-  }
+  avb_talker_on_listener_disconnect_default(avb, source_num, listener_guid, connection_count);
 }
 
 void avb_talker_on_source_address_reserved(client interface avb_interface avb, int source_num, unsigned char mac_addr[6])
 {
-  // Do some debug print
-  debug_printf("MAAP reserved Talker stream #%d address: %x:%x:%x:%x:%x:%x\n", source_num,
-                            mac_addr[0],
-                            mac_addr[1],
-                            mac_addr[2],
-                            mac_addr[3],
-                            mac_addr[4],
-                            mac_addr[5]);
-
-  avb.set_source_dest(source_num, mac_addr, 6);
-
-  /* NOTE: acmp_talker_init() must be called BEFORE talker_set_mac_address() otherwise it will zero
-   * what was just set */
-  avb_1722_1_acmp_talker_init();
-  avb_1722_1_talker_set_mac_address(source_num, mac_addr);
-  avb_1722_1_adp_announce();
+  avb_talker_on_source_address_reserved_default(avb, source_num, mac_addr);
 }
 #endif
