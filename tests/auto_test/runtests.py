@@ -2,6 +2,7 @@
 
 import datetime
 import dateutil.relativedelta
+import errno
 import os
 import psutil
 import re
@@ -18,6 +19,15 @@ test_folders = {
   os.path.join('configs', 'random_3') : range(1,4),
   os.path.join('configs', 'random_4') : range(1,4),
 }
+
+def mkdir_p(path):
+  try:
+    os.makedirs(path)
+  except OSError as exc:
+    if exc.errno == errno.EEXIST and os.path.isdir(path):
+      pass
+    else:
+       raise
 
 def attr_to_string(obj, attr_name):
   if hasattr(obj, attr_name) and getattr(obj, attr_name) > 0:
@@ -133,7 +143,8 @@ if __name__ == "__main__":
   else:
     for arg in sys.argv[1:]:
       if arg == '--clean':
-        print "Cleaning out old runs"
+        backup_folder = os.path.join('backup', time.strftime("%Y_%m_%d_%H_%M_%S"))
+        print "Moving old runs to %s" % backup_folder
         for f in os.listdir('configs'):
           folder = os.path.join('configs', f)
           if not os.path.isdir(folder):
@@ -141,8 +152,10 @@ if __name__ == "__main__":
           for g in os.listdir(folder):
             subfolder = os.path.join(folder, g)
             if os.path.isdir(subfolder):
-              print "Removing %s" % subfolder
-              shutil.rmtree(subfolder)
+              print "Moving %s" % subfolder
+              dst = os.path.join(backup_folder, os.path.split(subfolder)[0])
+              mkdir_p(dst)
+              shutil.move(subfolder, dst)
 
       elif os.path.isdir(os.path.join('configs', arg)):
         run_folder(os.path.join('configs', arg))
