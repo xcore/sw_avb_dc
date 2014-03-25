@@ -4,26 +4,26 @@
         <component description = "A 1722.1 example daisy chain endpoint application" type = "demoCode" scope = "Example" path = "app_daisy_chain" local = "false" id = "app_daisy_chain" name = "AVB-DC example application">
             <board>SLICEKIT-L2</board>
             <board>SLICEKIT-L16</board>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_flash</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_util</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_1722_1</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_util" version = "1.0.4">module_locks</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_slicekit_support.git" version = "1.0.4">module_slicekit_support</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_util" version = "1.0.4">module_logging</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_srp</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_otp" version = "1.0.0">module_otp_board_info</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_1722</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_i2c" version = "2.4.0">module_i2c_simple</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet_board_support</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet_smi</componentDependency>
             <componentDependency repo = "git://github.com/xcore/sc_util" version = "1.0.4">module_random</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_slicekit_support.git" version = "1.0.4">module_slicekit_support</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet_smi</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb</componentDependency>
             <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_gptp</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet_board_support</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_1722_1</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_srp</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_util" version = "1.0.4">module_locks</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_util</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_otp" version = "1.0.0">module_otp_board_info</componentDependency>
             <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_1722_maap</componentDependency>
-            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_media_clock</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_1722</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_util" version = "1.0.4">module_logging</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_flash</componentDependency>
             <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_audio</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_avb.git" version = "6.0.5">module_avb_media_clock</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_ethernet.git" version = "2.3.0">module_ethernet</componentDependency>
+            <componentDependency repo = "git://github.com/xcore/sc_i2c" version = "2.4.0">module_i2c_simple</componentDependency>
             <keyword>avb</keyword>
             <keyword>daisy</keyword>
             <keyword>chain</keyword>
@@ -33,9 +33,9 @@
     </components>
     <dependency repo = "sc_i2c">
         <gitbranch>master</gitbranch>
-        <githash>1ed8eb6c16db36b70b1435a49f5a583a7d7ab770</githash>
+        <githash>9c9a75f7381209ad017a12bc10d53cd3cb9c0eca</githash>
         <uri>https://github.com/xcore/sc_i2c.git</uri>
-        <version>2.4.0beta1</version>
+        <version>2.4.0rc0</version>
     </dependency>
     <dependency repo = "sc_avb">
         <gitbranch>master</gitbranch>
@@ -77,6 +77,7 @@
     <release parenthash = "608845baa557c9b953df71b8131931e7f172aef1" version = "1.0.4beta0" githash = "78e884153d395778e97cbd27c5161b92a8abde14"></release>
     <release parenthash = "235c3a1b345bfc28532d4eeceb3713a8a4277177" version = "1.0.4beta1" githash = "ee120b5cf9f60f393b52c062d3fee7b169e654f9"></release>
     <release parenthash = "696dfecb45194526544e56959df7237a7d5b7dd2" version = "1.0.4beta2" githash = "40d68798fac0fce97877247738acd489112c2cb7"></release>
+    <release parenthash = "fe6aa34ee1f9d05765b7a43969751c92bdca9240" version = "1.0.4rc0"></release>
     <subpartnumber>XM-004457-SM</subpartnumber>
     <vendor>XMOS</vendor>
     <version_defines>
