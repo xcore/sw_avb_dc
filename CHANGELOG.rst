@@ -7,7 +7,7 @@ sw_avb_dc Change Log
 
   * Changes to dependencies:
 
-    - sc_avb: 6.0.3beta0 -> 6.0.5beta1
+    - sc_avb: 6.0.3beta0 -> 6.0.5beta2
 
       + Bug fix to prevent compile error when Talker is disabled
       + Update to 1722 MAAP to fix non-compliance issue on conflict check
