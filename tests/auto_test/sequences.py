@@ -1,4 +1,5 @@
 import re
+import itertools
 
 import xmos.test.base as base
 from xmos.test.base import AllOf, OneOf, NoneOf, Sequence, Expected, getActiveProcesses
@@ -7,6 +8,14 @@ import analyzers
 import endpoints
 import state
 import graph
+
+# For checkpoint sequences, keep track of the last value per endpoint
+final_port_shaper_states = {}
+
+def get_and_clear_final_port_shaper_states():
+  expected = [ a for a in itertools.chain(*final_port_shaper_states.values()) ]
+  final_port_shaper_states.clear()
+  return expected
 
 def stream_id_from_guid(user, ep, num):
     stream_id = endpoints.get_avb_id(user, ep).replace("fffe","") + "000" + str(num)
@@ -106,7 +115,10 @@ def controller_success_disconnect_seq(args, test_step):
     return [Expected(args.controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*SUCCESS", 10, consumeOnMatch=True)]
 
 def controller_redundant_disconnect_seq(args, test_step):
-  return []
+  if args.controller_type == 'python':
+    return []
+  else:
+    return [Expected(args.controller_id, "NOTIFICATION.*DISCONNECT_RX_RESPONSE.*NOT_CONNECTED", 10, consumeOnMatch=True)]
 
 def controller_timeout_disconnect_seq(args, test_step):
   return [Expected(args.controller_id, "Timed out", 10, consumeOnMatch=True)]
@@ -126,7 +138,12 @@ def talker_new_connect_seq(test_step, user, src, src_stream, dst, dst_stream):
     seq += [Expected(src, "Talker stream #%d ready" % src_stream, 10)]
   seq += [Expected(src, "Talker stream #%d on" % src_stream, 10)]
 
-  talker_connection = [Sequence(seq)]
+  # If in a sequence of commands then the order cannot be guaranteed - so only
+  # expect a Sequence when not checkpointing
+  if test_step.checkpoint is None:
+    talker_connection = [Sequence(seq)]
+  else:
+    talker_connection = [AllOf(seq)]
   return talker_connection
 
 def talker_existing_connect_seq(test_step, user, src, src_stream, dst, dst_stream):
@@ -253,9 +270,23 @@ def port_shaper_connect_seq(test_step, forward_ep, src, src_stream, dst, dst_str
           forward_ep['name'], forward_port, 'connect')
 
   if expect_change:
-    return port_shaper_change_seq(test_step, forward_ep, forward_port, 'Increasing')
+    expected = port_shaper_change_seq(test_step, forward_ep, forward_port, 'Increasing')
   else:
-    return port_shaper_no_change_seq(test_step, forward_ep)
+    expected = port_shaper_no_change_seq(test_step, forward_ep)
+
+  # When running a sequences of checkpointed tests don't check shaper bandwidth
+  # figures for interim steps. Instead, keep track of the state per end-point so
+  # that the final state can be returned at the last checkpoint
+  if test_step.checkpoint is not None:
+    global final_port_shaper_states
+    if not test_step.checkpoint and expected:
+      if forward_port is None:
+        final_port_shaper_states['%s' % forward_ep['name']] = expected
+      else:
+        final_port_shaper_states['%s_%s' % (forward_ep['name'], forward_port)] = expected
+      expected = []
+
+  return expected
 
 def port_shaper_disconnect_seq(test_step, forward_ep, src, src_stream, dst, dst_stream):
   expect_change = False
@@ -268,10 +299,23 @@ def port_shaper_disconnect_seq(test_step, forward_ep, src, src_stream, dst, dst_
           forward_ep['name'], forward_port, 'disconnect')
 
   if expect_change:
-    return port_shaper_change_seq(test_step, forward_ep, forward_port, 'Decreasing')
+    expected = port_shaper_change_seq(test_step, forward_ep, forward_port, 'Decreasing')
   else:
-    return port_shaper_no_change_seq(test_step, forward_ep)
+    expected = port_shaper_no_change_seq(test_step, forward_ep)
 
+  # When running a sequences of checkpointed tests don't check shaper bandwidth
+  # figures for interim steps. Instead, keep track of the state per end-point so
+  # that the final state can be returned at the last checkpoint.
+  if test_step.checkpoint is not None:
+    global final_port_shaper_states
+    if not test_step.checkpoint and expected:
+      if forward_port is None:
+        final_port_shaper_states['%s' % forward_ep['name']] = expected
+      else:
+        final_port_shaper_states['%s_%s' % (forward_ep['name'], forward_port)] = expected
+      expected = []
+
+  return expected
 
 #
 # Analyzer sequences

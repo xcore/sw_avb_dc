@@ -11,7 +11,7 @@
                     "avb_id": "2297fffe005279"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "J1YyWGk6",
+                    "xrun_adapter_id": "FLnZyELI",
                     "avb_id": "2297fffe005269"
                 }
             },
@@ -26,7 +26,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -65,7 +65,7 @@
                     "avb_id": "2297fffe0052b1"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "UPgXQ3YI",
+                    "xrun_adapter_id": "I_S3T4DP",
                     "avb_id": "2297fffe005259"
                 }
             },
@@ -80,7 +80,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -119,7 +119,7 @@
                     "avb_id": "2297fffe0053c0"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "lULI7GNz",
+                    "xrun_adapter_id": "SoXMZr4v",
                     "avb_id": "2297fffe0053d8"
                 }
             },
@@ -134,7 +134,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -173,7 +173,7 @@
                     "avb_id": "2297fffe005200"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "MD6TqJzo",
+                    "xrun_adapter_id": "o_3qV6zi",
                     "avb_id": "2297fffe0053e0"
                 }
             },
@@ -188,7 +188,7 @@
             "descriptors" : {
                 "1_CONFIGURATION" : {
                     "Configuration 0": [
-                        { "item" : "descriptor_counts_count", "value" : 9}
+                        { "item" : "descriptor_counts_count", "value" : 10}
                     ]
                 },
                 "2_AUDIO_UNIT": {
@@ -237,7 +237,7 @@
                     "xrun_adapter_id": "RIR3drfe"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "N3xREyZ2"
+                    "xrun_adapter_id": "vzDfG54M"
                 }
             }
         },
@@ -257,7 +257,7 @@
                     "xrun_adapter_id": "2mzOnGwm"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "kHODr4xB"
+                    "xrun_adapter_id": "zaeq_f8H"
                 }
             }
         }
@@ -271,7 +271,7 @@
                     "xrun_adapter_id": "sxiWirxZ"
                 },
                 "peter" : {
-                    "xrun_adapter_id": "z8Ncdnfg"
+                    "xrun_adapter_id": "79LPc4vz"
                 }
             }
         }
