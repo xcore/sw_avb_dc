@@ -257,8 +257,15 @@ def action_connect(args, test_step, expected, params_list):
     not_forward_enable += sequences.expected_seq('port_shaper_connect')(test_step, endpoints.get(node),
           src, src_stream, dst, dst_stream)
 
-  if test_step.do_checks and (talker_expect or listener_expect or controller_expect or not_forward_enable):
-    expected += [AllOf(talker_expect + listener_expect + controller_expect + not_forward_enable)]
+  if test_step.checkpoint:
+    final_port_shaper_states = sequences.get_and_clear_final_port_shaper_states()
+  else:
+    final_port_shaper_states = []
+
+  if test_step.do_checks and (talker_expect or listener_expect or controller_expect or
+                              not_forward_enable or final_port_shaper_states):
+    expected += [AllOf(talker_expect + listener_expect + controller_expect +
+                       not_forward_enable + final_port_shaper_states)]
 
   yield args.master.expect(None)
 
@@ -311,8 +318,15 @@ def action_disconnect(args, test_step, expected, params_list):
     not_forward_disable += sequences.expected_seq('port_shaper_disconnect')(test_step, endpoints.get(node),
           src, src_stream, dst, dst_stream)
 
-  if test_step.do_checks and (talker_expect or listener_expect or controller_expect or not_forward_disable):
-    expected += [AllOf(talker_expect + listener_expect + controller_expect + not_forward_disable)]
+  if test_step.checkpoint:
+    final_port_shaper_states = sequences.get_and_clear_final_port_shaper_states()
+  else:
+    final_port_shaper_states = []
+
+  if test_step.do_checks and (talker_expect or listener_expect or controller_expect or
+                              not_forward_disable or final_port_shaper_states):
+    expected += [AllOf(talker_expect + listener_expect + controller_expect +
+                       not_forward_disable + final_port_shaper_states)]
 
   yield args.master.expect(None)
 
