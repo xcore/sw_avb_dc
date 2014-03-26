@@ -4,6 +4,12 @@ sw_avb_dc Change Log
 1.0.5
 -----
 
+  * Changes to dependencies:
+
+    - sc_avb: 6.0.5rc0 -> 6.0.6rc0
+
+      + Reverted change to 1722 introduced in 6.0.3 that caused media clock to unlock
+
 1.0.4
 -----
   * Bug fix to CONFIGURATION descriptor descriptor_counts_count field which was 1 small
