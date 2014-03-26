@@ -1,14 +1,18 @@
 sw_avb_dc Change Log
 ====================
 
+1.0.5
+-----
+
 1.0.4
 -----
   * Bug fix to CONFIGURATION descriptor descriptor_counts_count field which was 1 small
 
   * Changes to dependencies:
 
-    - sc_avb: 6.0.3beta0 -> 6.0.5rc0
+    - sc_avb: 6.0.3beta0 -> 6.0.6rc0
 
+      + Reverted change to 1722 introduced in 6.0.3 that caused media clock to unlock
       + Bug fix to prevent compile error when Talker is disabled
       + Update to 1722 MAAP to fix non-compliance issue on conflict check
       + Updates design guide documentation to include AVB-DC details
