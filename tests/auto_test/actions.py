@@ -425,7 +425,6 @@ def action_link_down(args, test_step, expected, params_list):
     path = graph.find_path(state.get_current(), c.talker.src, c.listener.dst)
     if path and analyzer_name in path:
       affected_talkers |= set([c.talker])
-      checks += [Expected(c.listener.dst, "ADP: Removing entity who timed out -> GUID", 30)]
       checks += sequences.analyzer_listener_disconnect_seq(test_step,
                       c.talker.src, c.talker.src_stream,
                       c.listener.dst, c.listener.dst_stream)
