@@ -10,7 +10,7 @@ Key Features
 ============
 
 * Up to 4in/4out I2S audio channels
-* Support for 2 daisy-chained boards to a third Talker/Listener
+* Support for 4 daisy-chained nodes
 * 1722 Talker and Listener (simultaneous) support
 * 1722 MAAP support for Talkers
 * 802.1Q MRP, MVRP, SRP protocols
