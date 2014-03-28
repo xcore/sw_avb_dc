@@ -32,13 +32,10 @@ Known Issues
     * *WARNING: Include file .build/generated/module_avb_1722_1/aem_descriptors.h missing*
     * *audio_i2s.h:187: warning: cannot unroll loop due to unknown loop iteration count*
     * *xta: warning: target (0x0) of: (xscope_constructor+88) 0x18244 bl (lu10) -0xc124 not found in executable sections*
-* XTA will report a timing failure for route(1).
 * Apple Macs may send bad PTP Sync timestamps under load. A workaround has been implemented in AVB-DC firmware to prevent loss of audio 
   which may may cause interoperability issues with non-compliant AVB bridges. This workaround can be disabled at the following
   line in module_gptp/src/gptp_config.h:
   *#define PTP_THROW_AWAY_SYNC_OUTLIERS 0*
-* SRP interoperability issues have been observed with Broadcom Hawkeye 53324 bridge reference designs running firmware v6.0.0.0. This
-  may result in stream reservations not succeeding. 
 
 Support
 =======
