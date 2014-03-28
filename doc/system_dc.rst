@@ -1,4 +1,4 @@
-System Description
+System description
 ==================
 
 The following sections describe the system architecture of the XMOS
@@ -8,7 +8,7 @@ AVB software platform.
 This software design guide assumes the reader is familiar with the XC
 language and XMOS XS1 devices.
 
-High Level System Architecture
+High level system architecture
 ------------------------------
 
 An endpoint consists of five main interacting components:
@@ -33,7 +33,7 @@ An endpoint consists of five main interacting components:
      :align: center
 
 
-Ethernet MAC Component
+Ethernet MAC component
 ----------------------
 
 The MAC component provides two-port Ethernet connectivity to the AVB-DC
@@ -69,7 +69,7 @@ MAC. For AVB applications it is more likely that interaction with the
 Ethernet stack will be via the main AVB API (see Section
 :ref:`sec_avb_api`).
 
-1722 Packet Routing
+1722 packet routing
 ~~~~~~~~~~~~~~~~~~~
 
 The AVB enabled Ethernet MAC also includes a *IEEE 1722* packet router
@@ -81,7 +81,7 @@ and is controlled implicitly via the AVB API described in Section
 
 .. index:: ptp, 802.1as
 
-Precision Timing Protocol Component
+Precision Timing Protocol component
 -----------------------------------
 
 The Precision Timing Protocol (PTP) component enables a system with a
@@ -111,15 +111,15 @@ in Section :ref:`sec_ptp_api`.
 
  * The PTP system in the endpoint is self-configuring, it runs
    automatically and gives each endpoint an accurate notion of a global clock.
- * The global clock is *not* the same as the audio work clock, although it can be used to derive it. An audio stream may be at a rate that is independent of the 
+ * The global clock is *not* the same as the audio word clock, although it can be used to derive it. An audio stream may be at a rate that is independent of the 
    PTP clock but will contain timestamps that use the global PTP clock
    domain as a reference domain.
 
 
-Audio Components
+Audio components
 ----------------
 
-AVB Streams, Channels, Talkers and Listeners
+AVB streams, channels, talkers and listeners
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Audio is transported in streams of data, where each stream may have multiple
@@ -160,7 +160,7 @@ receive the same stream to output in sync.
    (see Section :ref:`sec_config`).
 
 
-Internal Routing, Media FIFOs
+Internal routing, media FIFOs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. index:: media fifo
@@ -208,11 +208,11 @@ in :ref:`sec_avb_api`.
 
 .. note::
   
-   Media FIFOs uses shared memory to move data between tasks, thus the
+   Media FIFOs use shared memory to move data between tasks, thus the
    filling and emptying of the FIFO must be on the same tile.
 
 
-Talker Units
+Talker units
 ~~~~~~~~~~~~
 
 .. only:: latex
@@ -229,7 +229,7 @@ Talker Units
 
 A talker unit consists of one logcial core which creates *IEEE 1722* packets and passes the audio samples onto the MAC. Audio
 samples are passed to this component via input media FIFOs.
-Samples are pushed into this FIFO from a different task implementing the audio hardware interface. The packetizer task removes the samples and combines them into *IEEE 1722* Ethernet packets to be transmitted via the MAC component. 
+Samples are pushed into this FIFO from a different task implementing the audio hardware interface. The Talker task removes the samples and combines them into *IEEE 1722* Ethernet packets to be transmitted via the MAC component. 
 
 When the packets are created the timestamps are converted to the time domain of the global clock provided by the PTP component, and a fixed offset is added to the timestamps to provide the *presentation time* of the samples (*i.e* the time at which the sample should be played by a Listener). 
 
@@ -238,10 +238,10 @@ passed via a shared memory interface a talker can only combine input FIFOs
 that are created on the same tile as the talker. The instantiating of 
 talker units is performed via the API described in Section
 :ref:`sec_component_api`. Once the talker unit starts, it registers
-with the main control task and is control via the main AVB API
+with the main control task and is controlled via the main AVB API
 described in Section :ref:`sec_avb_api`.
 
-Listener Units
+Listener units
 ~~~~~~~~~~~~~~
 
 .. only:: latex
@@ -257,7 +257,7 @@ Listener Units
 
 
 A Listener unit takes *IEEE 1722* packets from the MAC
-and converts them into a sample stream to be fed into a media FIFOs.
+and converts them into a sample stream to be fed into a media FIFO.
 Each audio Listener component can listen to several *IEEE 1722*
 streams.
 
@@ -267,7 +267,7 @@ Listener units is performed via the API described in Section
 with the main control task and is controlled via the main AVB API
 described in Section :ref:`sec_avb_api`.
 
-Media FIFOs to XC Channels
+Media FIFOs to XC channels
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sometimes it is useful to convert the audio stream in a media FIFO
@@ -276,7 +276,7 @@ samples off tile or if the audio interface task requires samples
 over a channel. Several functions are provided to do this and are
 described in Section :ref:`sec_component_api`.
 
-Audio Hardware Interfaces
+Audio hardware interfaces
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The audio hardware interface components drive external audio hardware, pull
@@ -284,7 +284,7 @@ audio out of media output FIFOs and push into media input FIFOs.
 
 Different interfaces interact in different ways, some
 directly push and pull from the media FIFOs, whereas some for
-performance reasons require samples to be provided of an XC
+performance reasons require samples to be provided over an XC
 channel.
 
 The following diagram shows one potential layout of the I2S component
@@ -304,7 +304,7 @@ an XC channel:
  .. image:: images/i2s-crop.png
    :align: center
 
-Media Clocks
+Media clocks
 ------------
 
 A media clock controls the rate at which information is passed to an
@@ -333,6 +333,10 @@ audio listener component to track timing information of incoming
 *IEEE 1722* streams. It then sends control information back to
 ensure the listening component honors the presentation time of the
 incoming stream.
+
+.. note::
+
+   Multiple media clocks require multiple hardware PLLs. AVB-DC hardware supports a single media clock.
 
 Driving an external clock generator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -366,7 +370,7 @@ the XS1 device.
 Device Discovery, Connection Management and Control
 ---------------------------------------------------
 
-The Control Task
+The control task
 ~~~~~~~~~~~~~~~~
 
 In addition to components described in previous sections, an AVB
@@ -383,11 +387,11 @@ b) Enumeration
 c) Connection Management
 d) Control
 
-These steps can be used together to form a system of end stations that interoperate with each other in a standards compliant way. The application that will use these individual steps is called a Controller and is the third member in the Talker, Listener and Controller device relationship.
+These steps can be used together to form a system of end stations that interoperate with each other in a standards compliant way. The application that will use these individual steps is called a *Controller* and is the third member in the Talker, Listener and Controller device relationship.
 
 A Controller may exist within a Talker, a Listener, or exist remotely within the network in a separate endpoint or general purpose computer.
 
-The Controller can use the individual steps to find, connect and control entities on the network but it may choose to not use all of the steps if the Controller already knows some of the information (e.g. hard coded values assigned by user/hardware switch or values from previous session establishment) that can be gained in using the steps. The only required step is connection management because this is the step that establishes the bandwidth usage and reservations across the AVB cloud.
+The Controller can use the individual steps to find, connect and control entities on the network but it may choose to not use all of the steps if the Controller already knows some of the information (e.g. hard coded values assigned by user/hardware switch or values from previous session establishment) that can be gained in using the steps. The only required step is connection management because this is the step that establishes the bandwidth usage and reservations across the AVB network.
 
 The four steps are broken down as follows:
 
@@ -399,21 +403,21 @@ The four steps are broken down as follows:
    management.
  * Connection management is the process of connecting or disconnecting one or more streams between two or more
    AVB endpoint.
- * Control is the process of adjusting a parameter on the endpoint from another Entity. There are a number of standard
+ * Control is the process of adjusting a parameter on the endpoint from another endpoint. There are a number of standard
    types of controls used in media devices like volume control, mute control and so on. A framework of basic
    commands allows the control process to be extended by the endpoint.
 
 .. note:: 
-   The XMOS endpoint provides full support for Talker and Listener 1722.1 services. Basic 1722.1 Controller functionality is available to allow 'plug and play' connection between two XMOS endpoints, however, it is expected that GUI Controller software will be available on the network for setting up larger topologies.
+   The XMOS endpoint provides full support for Talker and Listener 1722.1 services. It is expected that Controller software will be available on the network for handling connection management and control.
 
 To assist in this task a unified control API is presented in Section :ref:`sec_avb_api`.
 
 .. _sec_resource:
 
-Resource Usage
+Resource usage
 --------------
 
-Available Chip Resources
+Available chip resources
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Each XMOS device has a set of resources detailed in the following
@@ -437,22 +441,6 @@ which may affect how resources can be used:
      | 12 x 4bit
      | 7 x 8bit
      | 3 x 16bit
- * - XS1-L12A-128-QF124-C10
-   - 12
-   - 1000
-   - 128
-   - | 32 x 1bit
-     | 12 x 4bit
-     | 7 x 8bit
-     | 3 x 16bit
- * - XS1-L10A-128-QF124-C10
-   - 10
-   - 1000
-   - 128
-   - | 32 x 1bit
-     | 12 x 4bit
-     | 7 x 8bit
-     | 3 x 16bit
 
 .. note::
  
@@ -466,7 +454,7 @@ should be taken as a rough guide since exact memory usage depends
 on the integration of components (which components are on which
 tile etc.) in the final build of the application.
 
-Ethernet Component
+Ethernet component
 ~~~~~~~~~~~~~~~~~~
 
 Each endpoint requires an Ethernet MAC layer.
@@ -485,7 +473,7 @@ Each endpoint requires an Ethernet MAC layer.
     - 15 code, 1.5 per buffer
     - 10 x 1bit, 4 x 4bit
 
-PTP Component
+PTP component
 ~~~~~~~~~~~~~
 
 Every AVB endpoint must include a PTP component.
@@ -505,7 +493,7 @@ Every AVB endpoint must include a PTP component.
     - None
 
 
-Media Clock Server
+Media clock server
 ~~~~~~~~~~~~~~~~~~
 
 Every AVB endpoint must include a media clock server.
@@ -544,10 +532,10 @@ is required.
 .. note::
  
    PTP, Media Clock Server and PLL driver components may be combined into a single logical core running at 100 MIPS if
-   the number of channels is constrained.
+   the number of channels is constrained to 2.
 
 
-Audio Component(s)
+Audio component(s)
 ~~~~~~~~~~~~~~~~~~
 
 Each endpoint may have several listener and talker components. Each
@@ -577,7 +565,7 @@ streams and up to 12 channels of audio.
 .. note::
  
    The Talker and Listener components may be combined into a single logical core running at 100 MIPS if
-   the number of streams is 1 and the number of channels is <= 4 per stream.
+   the number of streams is 1 and the number of channels is <= 4.
 
 The amount of resource required for audio processing depends on the
 interface and the number of audio channels required. The overheads
@@ -599,12 +587,6 @@ for the interface are:
     - 0.5
     - | 3 x 1bit 
       | 1 x 1bit per stereo channel
-  * - TDM
-    - 1
-    - 50
-    - 0.5
-    - | 3 x 1bit 
-      | 1 x 1bit per 8 channels
 
 The following table shows that number of channels an interface can
 handle per logical core:
@@ -647,7 +629,7 @@ memory is required depending on the number of audio channels.
    - n in/m out
    - 1 x (n+m)
 
-Configuration/Control
+Configuration/control
 ~~~~~~~~~~~~~~~~~~~~~
 
 In addition to the other components 

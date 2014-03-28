@@ -1,8 +1,8 @@
-Programming Guide
+Programming guide
 +++++++++++++++++
 
-Getting Started 
-================
+Getting started 
+===============
 
 Obtaining the latest firmware
 -----------------------------
@@ -66,7 +66,7 @@ Using the Command Line Tools
 
        xrun --xscope <binary>.xe
 
-#. If multiple XTAG2s are connected, obtain the adapter ID integer by executing:
+#. If multiple xTAG-2s are connected, obtain the adapter ID integer by executing:
 
    :: 
 
@@ -83,8 +83,8 @@ Using the Command Line Tools
 Installing the application onto flash via Command Line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#. Connect the XTAG-2 debug adapter to the relevant development
-   board, then plug the XTAG-2 into your PC or Mac.
+#. Connect the xTAG-2 debug adapter to the relevant development
+   board, then plug the xTAG-2 into your PC or Mac.
 
 Using Command Line Tools
 ------------------------
@@ -97,7 +97,7 @@ Using Command Line Tools
 
        xflash <binary>.xe
 
-#. If multiple XTAG2s are connected, obtain the adapter ID integer by executing:
+#. If multiple xTAG-2s are connected, obtain the adapter ID integer by executing:
 
    :: 
 
@@ -123,7 +123,7 @@ Applications build into a single
 executable using the source code from the modules. The modules used by
 an application are specified using the ``USED_MODULES`` variable in
 the application Makefile. For more details on this module structure
-please see the XMOS build system documentation.
+please see the XMOS build system document *Using XMOS Makefiles (X6348)*.
 
 The AVB-DC source package contains a simple demonstration application `app_daisy_chain`.
 
@@ -177,7 +177,7 @@ every application:
  * - module_avb_1722_maap
    - IEEE 1722 MAAP - Multicast address allocation code.
  * - module_avb_audio
-   - Code for media FIFOs and audio hardware interfaces (I2S/TDM etc).
+   - Code for media FIFOs and audio hardware interfaces (I2S).
  * - module_avb_flash
    - Flash access for firmware upgrade
  * - module_avb_media_clock
@@ -262,7 +262,7 @@ Once the AVB-DC application has been built:
 
        xflash --boot-partition-size 262144 <binary>.xe
 
-#. If multiple XTAG2s are connected, obtain the adapter ID integer by executing:
+#. If multiple xTAG-2s are connected, obtain the adapter ID integer by executing:
 
    :: 
 
@@ -301,6 +301,9 @@ AVB end station.
 
 Using the avdecc-lib CLI Controller to upgrade firmware
 -------------------------------------------------------
+
+..note ::
+  See the XMOS document *AVB System Requirements Guide* for installation details of the ``avdecccmdline`` tool.
 
 #. To program the new firmware, first run ``avdecccmdline`` and select the interface number that represents 
    the Ethernet interface that the AVB network is connected to:

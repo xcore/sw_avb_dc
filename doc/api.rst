@@ -3,7 +3,7 @@ API Reference
 
 .. _sec_defines_api:
 
-Configuration Defines
+Configuration defines
 ---------------------
 
 Demo and hardware specific
@@ -20,7 +20,7 @@ Core AVB parameters
 ~~~~~~~~~~~~~~~~~~~
   
 Each application using the AVB modules must include a header configuration file named
-``avb_conf.h`` within the ``src/`` directory of the application and this file must set the following values with #defines.
+``avb_conf.h`` within the ``src/`` directory of the application and this file must set the #defines in the following two sections.
 
 See the demo application for a realistic example.
 
@@ -30,7 +30,9 @@ See the demo application for a realistic example.
 
 Ethernet
 ~~~~~~~~
-See the Ethernet documentation for detailed information on its parameters.
+See the Ethernet documentation for detailed information on its parameters:
+
+https://www.xmos.com/published/xmos-layer-2-ethernet-mac-component?version=latest
 
 Audio subsystem
 ~~~~~~~~~~~~~~~
@@ -90,7 +92,7 @@ top-level main. For details on the Ethernet component, see
 the `Ethernet Component Guide
 <http://github.xcore.com/sc_ethernet/index.html>`_.
 
-Core Components
+Core components
 ~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: avb_manager
@@ -121,7 +123,7 @@ Core Components
 
 .. doxygenfunction:: avb_1722_talker
 
-Audio Components
+Audio components
 ~~~~~~~~~~~~~~~~
 
 The following types are used by the AVB audio components:
@@ -152,7 +154,7 @@ The following functions implement AVB audio components:
 AVB API
 -------
    
-General Control Functions
+General control functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: avb_get_control_packet
@@ -162,7 +164,7 @@ General Control Functions
 .. doxygenfunction:: avb_process_1722_control_packet
 
 
-Multicast Address Allocation Commands
+Multicast Address Allocation commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: avb_1722_maap_request_addresses
@@ -171,7 +173,7 @@ Multicast Address Allocation Commands
 
 .. doxygenfunction:: avb_1722_maap_relinquish_addresses
 
-MAAP Application Hooks
+MAAP application hooks
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: avb_talker_on_source_address_reserved
@@ -184,7 +186,7 @@ AVB Control API
 
 .. doxygeninterface:: avb_interface
 
-1722.1 Controller Commands
+1722.1 Controller commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: avb_1722_1_controller_connect
@@ -192,7 +194,7 @@ AVB Control API
 .. doxygenfunction:: avb_1722_1_controller_disconnect_all_listeners
 .. doxygenfunction:: avb_1722_1_controller_disconnect_talker
 
-1722.1 Discovery Commands
+1722.1 Discovery commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: avb_1722_1_adp_announce
@@ -201,7 +203,7 @@ AVB Control API
 .. doxygenfunction:: avb_1722_1_adp_discover_all
 .. doxygenfunction:: avb_1722_1_entity_database_flush
 
-1722.1 Application Hooks
+1722.1 application hooks
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 These hooks are called on events that can be acted upon by the application. They can be overridden by
@@ -218,7 +220,7 @@ user defined hooks of the same name to perform custom functionality not present 
 
 .. _sec_1722_1_aem:
 
-1722.1 Descriptors
+1722.1 descriptors
 ------------------
 
 The XMOS AVB reference design provides an AVDECC Entity Model (AEM) consisting of descriptors to describe the internal components 
@@ -332,7 +334,7 @@ For example:
 
 .. _sec_ptp_api:
 
-PTP Client API
+PTP client API
 --------------
 
 The PTP client API can be used if you want extra information about the PTP
@@ -341,12 +343,12 @@ control the AVB endpoint since the talker, listener and media clock
 server units communicate with the PTP server directly.
 
 
-Time Data Structures
+Time data structures
 ~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenstruct:: ptp_timestamp
 
-Getting PTP Time Information
+Getting PTP time information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygentypedef:: ptp_time_info
@@ -361,7 +363,7 @@ Getting PTP Time Information
 .. doxygenfunction:: ptp_get_requested_time_info
 .. doxygenfunction:: ptp_get_requested_time_info_mod64
 
-Converting Timestamps
+Converting timestamps
 ~~~~~~~~~~~~~~~~~~~~~
 
 .. doxygenfunction:: local_timestamp_to_ptp

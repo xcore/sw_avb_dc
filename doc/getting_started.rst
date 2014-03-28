@@ -63,7 +63,7 @@ Using the Command Line Tools
 
        xrun --xscope <binary>.xe
 
-#. If multiple XTAG2s are connected, obtain the adapter ID integer by executing:
+#. If multiple xTAG-2s are connected, obtain the adapter ID integer by executing:
 
    :: 
 
@@ -80,7 +80,7 @@ Using the Command Line Tools
 Installing the application onto flash via Command Line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#. Connect the XTAG-2 debug adapter to the relevant development
+#. Connect the xTAG-2 debug adapter to the relevant development
    board, then plug the XTAG-2 into your PC or Mac.
 
 Using Command Line Tools
@@ -94,7 +94,7 @@ Using Command Line Tools
 
        xflash <binary>.xe
 
-#. If multiple XTAG2s are connected, obtain the adapter ID integer by executing:
+#. If multiple xTAG-2s are connected, obtain the adapter ID integer by executing:
 
    :: 
 
