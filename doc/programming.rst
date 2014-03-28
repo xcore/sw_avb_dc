@@ -285,8 +285,8 @@ This programs the factory default firmware image into the flash device.
 To use the firmware upgrade mechanism you need to build a firmware upgrade
 image:
 
-#. Edit the ``aem_entity_strings.h.in`` file and change the ``AVB_1722_1_FIRMWARE_VERSION_STRING`` and 
-   add a new ``AVB_1722_1_ADP_MODEL_ID`` to ``avb_conf.h``.
+#. Edit the ``aem_entity_strings.h.in`` file and increment the ``AVB_1722_1_FIRMWARE_VERSION_STRING`` and 
+   ``AVB_1722_1_ADP_MODEL_ID`` in ``avb_conf.h``.
 
 #. Rebuild the application
 
