@@ -1,4 +1,4 @@
-Ethernet AVB Standards
+Ethernet AVB standards
 ======================
 
 Ethernet AVB consists of a collection of different standards that together allow audio and video to be streamed over Ethernet. The standards provide synchronized, uninterrupted streaming with multiple talkers and listeners on a switched network infrastructure. 

@@ -1,6 +1,18 @@
 sw_avb_dc Change Log
 ====================
 
+1.0.6
+-----
+
+  * Changes to dependencies:
+
+    - sc_avb: 6.0.6rc0 -> 6.0.7rc0
+
+
+    - sc_ethernet: 2.3.0rc0 -> 2.3.1rc0
+
+      + Fix invalid inter-frame gaps.
+
 1.0.5
 -----
 

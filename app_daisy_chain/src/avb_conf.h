@@ -92,7 +92,7 @@
 #define AVB_NUM_MEDIA_UNITS 1
 
 /** The number of media clocks in the endpoint. Typically the number of clock domains, each with a
-  * separate PLL and master clock */
+  * separate PLL and master clock. */
 #define AVB_NUM_MEDIA_CLOCKS 1
 
 /** The maximum sample rate in Hz of audio that is to be input or output */
@@ -113,6 +113,8 @@
                                             AVB_1722_1_ADP_ENTITY_CAPABILITIES_EFU_MODE| \
                                             AVB_1722_1_ADP_ENTITY_CAPABILITIES_ADDRESS_ACCESS_SUPPORTED| \
                                             AVB_1722_1_ADP_ENTITY_CAPABILITIES_AEM_IDENTIFY_CONTROL_INDEX_VALID)
+
+#define AVB_1722_1_ADP_MODEL_ID 0x1234
 
 enum aem_control_indices {
     DESCRIPTOR_INDEX_CONTROL_IDENTIFY = 0,
