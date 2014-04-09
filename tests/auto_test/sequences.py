@@ -279,7 +279,7 @@ def port_shaper_connect_seq(test_step, forward_ep, src, src_stream, dst, dst_str
   # that the final state can be returned at the last checkpoint
   if test_step.checkpoint is not None:
     global final_port_shaper_states
-    if not test_step.checkpoint and expected:
+    if expected:
       if forward_port is None:
         final_port_shaper_states['%s' % forward_ep['name']] = expected
       else:
@@ -308,7 +308,7 @@ def port_shaper_disconnect_seq(test_step, forward_ep, src, src_stream, dst, dst_
   # that the final state can be returned at the last checkpoint.
   if test_step.checkpoint is not None:
     global final_port_shaper_states
-    if not test_step.checkpoint and expected:
+    if expected:
       if forward_port is None:
         final_port_shaper_states['%s' % forward_ep['name']] = expected
       else:
