@@ -7,7 +7,7 @@
             "name": "dc0",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "2CA2fKpH",
+                    "xrun_adapter_id": "jUxtyrC1",
                     "avb_id": "2297fffe005279"
                 },
                 "peter" : {
@@ -61,7 +61,7 @@
             "name": "dc1",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "xYgZa0A9",
+                    "xrun_adapter_id": "nds7wtQo",
                     "avb_id": "2297fffe0052b1"
                 },
                 "peter" : {
@@ -115,7 +115,7 @@
             "name": "dc2",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "TAKtw_n5",
+                    "xrun_adapter_id": "30tvmm4X",
                     "avb_id": "2297fffe0053c0"
                 },
                 "peter" : {
@@ -169,7 +169,7 @@
             "name": "dc3",
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "HdPZCSYD",
+                    "xrun_adapter_id": "RHoHJBE4",
                     "avb_id": "2297fffe005200"
                 },
                 "peter" : {
@@ -234,7 +234,7 @@
             },
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "RIR3drfe"
+                    "xrun_adapter_id": "x8Ng3CBc"
                 },
                 "peter" : {
                     "xrun_adapter_id": "vzDfG54M"
@@ -254,7 +254,7 @@
             },
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "2mzOnGwm"
+                    "xrun_adapter_id": "Q7u6GjQq"
                 },
                 "peter" : {
                     "xrun_adapter_id": "zaeq_f8H"
@@ -268,7 +268,7 @@
             "port" : 12350,
             "users" : {
                 "andy" : {
-                    "xrun_adapter_id": "sxiWirxZ"
+                    "xrun_adapter_id": "5uJJzTAC"
                 },
                 "peter" : {
                     "xrun_adapter_id": "79LPc4vz"
